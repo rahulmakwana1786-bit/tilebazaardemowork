@@ -1,0 +1,11 @@
+[
+  {
+    "contact_name": "test2",
+    "company_name": "fallbackCo",
+    "email": "fallback@example.com",
+    "inquiry_type": "Sample Request",
+    "area_sqm": 50,
+    "message": "fallback test message",
+    "created_at": "2026-05-20T05:03:30.109Z"
+  }
+]

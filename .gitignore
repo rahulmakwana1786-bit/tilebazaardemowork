@@ -1,0 +1,17 @@
+# Dependency and build directories
+node_modules/
+.next/
+dist/
+build/
+coverage/
+
+# Environment files and logs
+.env
+.env.local
+.env.*
+*.log
+.DS_Store
+
+# Temporary / test files
+tmp_inquiry.json
+test-cart.js
