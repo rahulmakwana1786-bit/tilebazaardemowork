@@ -18,7 +18,10 @@ const app = express();
 // 1. Security Middlewares
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL, // Your Next.js frontend URL
+  origin: [
+    "http://localhost:3000",
+    "https://tilebazaardemowork.vercel.app"
+  ],
   credentials: true
 }));
 
