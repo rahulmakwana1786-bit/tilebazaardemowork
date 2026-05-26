@@ -167,7 +167,7 @@ const getProductDetails = (fileName: string) => {
     };
   }
   return {
-    price: 15,
+    price: 18,
     unit: "m²",
     isAccessory: false,
     isAdhesive: false,
