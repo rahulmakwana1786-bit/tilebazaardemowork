@@ -1,0 +1,108 @@
+/* ─────────────────────────────────────────────
+   Adhesive Info Tabs Component
+───────────────────────────────────────────── */
+function AdhesiveTabs() {
+  const [active, setActive] = React.useState<string | null>("substrate");
+  const tabs = [
+    { id: "substrate", label: "Substrate Preparation" },
+    { id: "instruction", label: "Instruction for Use" },
+    { id: "technical", label: "Technical Information" },
+  ];
+  return (
+    <div className="max-w-[1440px] mx-auto px-6 md:px-14 mb-16">
+      <div className="flex flex-wrap md:flex-nowrap">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActive(active === tab.id ? null : tab.id)}
+            className={`px-6 py-4 md:px-10 md:py-6 text-sm md:text-lg font-black uppercase tracking-widest transition-colors duration-200 ${
+              active === tab.id
+                ? "bg-[#4a2c2a] text-white"
+                : "text-[#4a2c2a] hover:bg-[#4a2c2a]/10"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {active === "substrate" && (
+        <div className="bg-[#4a2c2a] text-white px-12 py-12">
+          <p className="text-xl leading-relaxed max-w-5xl mb-6">
+            Before starting, all substrates must be clean, dry and strong enough
+            to support the weight of the tiles, tile adhesive and grout. Remove
+            all dust, dirt, oil, grease and other contaminants that may affect
+            adhesion.
+          </p>
+          <p className="text-xl leading-relaxed max-w-5xl mb-6">
+            Absorbent substrates and Gypsum- or calcium-sulphate-based
+            substrates should be primed with Validus Para prior to use. See
+            Validus Para datasheet for correct application according to specific
+            substrates.
+          </p>
+          <p className="text-xl leading-relaxed max-w-5xl mb-6">
+            Adhesive is best applied in a uniform layer, using a notched trowel
+            to comb to a consistent depth, as is appropriate for the type of and
+            size of tiles to be fixed. It can be applied to a maximum bed
+            thickness of 20mm.
+          </p>
+          <p className="text-xl leading-relaxed max-w-5xl mb-6">
+            Ensuring the adhesive is still fresh, bed tiles into the adhesive,
+            ensuring full coverage of adhesive between tile and substrate. Where
+            risk is present, protect the surface from frost until the adhesive
+            is fully set.
+          </p>
+          <p className="text-xl leading-relaxed max-w-5xl">
+            Clean surplus adhesive from the tiles and joints as soon as
+            possible; set adhesive will become increasingly difficult to remove.
+            Clean tools after use with water. Product for professional use only.
+          </p>
+        </div>
+      )}
+      {active === "instruction" && (
+        <div className="bg-[#4a2c2a] text-white px-12 py-12">
+          <p className="text-xl leading-relaxed max-w-5xl mb-6">
+            This product must be in its final position before the mix has
+            started to set. Mix with clean water until you achieve a smooth and
+            lump-free homogeneous consistency.
+          </p>
+          <p className="text-xl leading-relaxed max-w-5xl">
+            Allow the product to stand for about 2 minutes, then remix. The
+            adhesive is now ready for use and must be used within 30 minutes.
+          </p>
+        </div>
+      )}
+      {active === "technical" && (
+        <div className="bg-[#4a2c2a] text-white px-12 py-12">
+          <div className="grid md:grid-cols-2 gap-10 max-w-5xl">
+            <div>
+              <p className="text-xl font-bold mb-2">Grouting:</p>
+              <p className="text-xl leading-relaxed opacity-90">
+                In ideal conditions, grouting can begin after 12 hours. Foot
+                traffic accepted after 24 hours.
+              </p>
+            </div>
+            <div>
+              <p className="text-xl font-bold mb-2">Coverage:</p>
+              <p className="text-xl leading-relaxed opacity-90">
+                Approximately 4–5 m² at 10 mm bed.
+              </p>
+            </div>
+            <div>
+              <p className="text-xl font-bold mb-2">Storage:</p>
+              <p className="text-xl leading-relaxed opacity-90">
+                Store in unopened, sealed packaging in a cool, dry place.
+              </p>
+            </div>
+            <div>
+              <p className="text-xl font-bold mb-2">Shelf Life:</p>
+              <p className="text-xl leading-relaxed opacity-90">
+                Approximately 12 months from the date printed on packaging.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
