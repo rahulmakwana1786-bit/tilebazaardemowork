@@ -405,13 +405,16 @@ export default function ProductDetailPage({
 
     const currentFileName = imagePath.split("/").pop() || imagePath;
     const currentSuffix = getFileNameSuffix(currentFileName).toLowerCase();
+    const currentDimension = imagePath.split("/")[0];
 
     const paths: string[] = [];
     for (const itemName of group) {
-      const candidates = allTiles.filter(
-        (t) =>
-          getVariantMatchName(t.split("/").pop() || t).toLowerCase() === itemName
-      );
+      // Filter candidates to ensure they belong to the same dimension folder
+      const candidates = allTiles.filter((t) => {
+        const tDimension = t.split("/")[0];
+        const tName = t.split("/").pop() || t;
+        return tDimension === currentDimension && getVariantMatchName(tName).toLowerCase() === itemName;
+      });
 
       if (candidates.length > 0) {
         let best = candidates[0];
@@ -568,7 +571,7 @@ export default function ProductDetailPage({
               LEFT — Large Product Image
           ════════════════════════════════ */}
           <div className="w-full lg:w-[55%] xl:w-[58%] sticky top-28">
-            <div className="relative w-full aspect-square bg-[#f8f6f3] rounded-sm overflow-hidden shadow-sm flex items-center justify-center p-6 md:p-10 transition-all duration-300">
+            <div className="relative w-full aspect-square bg-transparent rounded-sm overflow-hidden flex items-center justify-center p-6 md:p-10 transition-all duration-300">
               {!imgError ? (
                 <img
                   src={`/tiles/${displayImagePath.split('/').map(s => encodeURIComponent(s)).join('/')}`}
@@ -596,7 +599,7 @@ export default function ProductDetailPage({
               variantPaths.length > 0
             ) && !isAurlProduct && !isPaveProduct && !isSaltedProduct && (
               <div className="mt-4 flex gap-3">
-                <div className="w-20 h-20 bg-[#f8f6f3] border-2 border-[#4a2c2a] rounded-sm overflow-hidden flex items-center justify-center p-1 flex-shrink-0">
+                <div className="w-20 h-20 bg-transparent border-2 border-[#4a2c2a] rounded-sm overflow-hidden flex items-center justify-center p-1 flex-shrink-0">
                   <img
                     src={`/tiles/${displayImagePath}`}
                     alt="thumb"
@@ -668,7 +671,7 @@ export default function ProductDetailPage({
                         className="group flex flex-col items-center"
                       >
                         <div
-                          className={`relative w-36 h-24 md:w-40 md:h-28 bg-[#f8f6f3] border-[3px] ${isActive ? "border-black" : "border-transparent shadow-sm"} hover:border-black/40 transition-colors overflow-hidden`}
+                          className={`relative w-36 h-24 md:w-40 md:h-28 bg-transparent border-[3px] ${isActive ? "border-black" : "border-transparent"} hover:border-black/40 transition-colors overflow-hidden`}
                         >
                           <img
                             src={`/tiles/${path}`}
@@ -720,7 +723,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
                         displayImagePath === "600x600/grid_aurl_600x600--MATT.jpg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -743,7 +746,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
                         displayImagePath === "600x600/AURL GRIGIO ARCO (605x605) 16mm--MATT.jpeg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -766,7 +769,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
                         displayImagePath === "600x600/AURL GRIGIO ARCO (605x605) 16mm (1).jpeg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -789,7 +792,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
                         displayImagePath === "600x600/AURL GRIGIO ARCO (605x605) 16mm (2).jpeg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -812,7 +815,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
                         displayImagePath === "600x600/AURL GRIGIO ARCO (605x605) 16mm (3).jpeg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -844,7 +847,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
                         displayImagePath === "600x600/grid_pave_600x600--MATT.jpg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -867,7 +870,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
                         displayImagePath === "600x600/PAVE’ PARIS G (605x605) 16mm.jpeg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -890,7 +893,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
                         displayImagePath === "600x600/PAVE’ PARIS G (605x605) 16mm (2).jpeg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -913,7 +916,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
                         displayImagePath === "600x600/PAVE’ PARIS G (605x605) 16mm (3).jpeg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -936,7 +939,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
                         displayImagePath === "600x600/PAVE’ PARIS G (605x605) 16mm (4).jpeg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -972,7 +975,7 @@ export default function ProductDetailPage({
                         className="group flex flex-col items-center"
                       >
                         <div
-                          className={`relative w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${isActive ? "border-[#4a2c2a]" : "border-transparent"} hover:border-[#4a2c2a]/50 transition-colors rounded-sm overflow-hidden`}
+                          className={`relative w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${isActive ? "border-[#4a2c2a]" : "border-transparent"} hover:border-[#4a2c2a]/50 transition-colors rounded-sm overflow-hidden`}
                         >
                           <img
                             src={`/tiles/${path}`}
@@ -1303,57 +1306,70 @@ export default function ProductDetailPage({
 
             {/* ── Add to Cart + Buy Now + Wishlist + Share ── */}
             <div className="flex flex-col gap-3 mb-8">
-              {/* Add to Cart + Buy Now — side by side */}
-              <div className="flex gap-3">
-                {/* Add to Cart */}
-                <button
-                  onClick={handleAddToCart}
-                  disabled={isAdding}
-                  className={`flex-1 py-4 text-[11px] font-black uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3
-                    ${isSuccess
-                      ? "bg-green-600 text-white"
-                      : "bg-[#4a2c2a] text-white hover:bg-[#3a1c1a] active:scale-[0.98]"
-                    } disabled:opacity-60 disabled:cursor-not-allowed`}
-                >
-                  {isAdding ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Adding...
-                    </>
-                  ) : isSuccess ? (
-                    <>
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                      Added to Cart
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" />
-                      </svg>
-                      Add to Cart
-                    </>
-                  )}
-                </button>
-
-                {/* Buy Now */}
-                <button
-                  onClick={() => {
-                    handleAddToCart().then(() => {
-                      router.push("/checkout");
-                    });
-                  }}
-                  disabled={isAdding}
-                  className="flex-1 py-4 text-[11px] font-black uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3 bg-[#4a2c2a] text-white hover:bg-[#a0750a] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+              {/* Add to Cart + Buy Now / Inquire for Price */}
+              {isPoster ? (
+                <Link
+                  href="/contact"
+                  className="w-full py-4 text-[11px] font-black uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3 bg-[#222] text-white hover:bg-black shadow-lg"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
                   </svg>
-                  Buy Now
-                </button>
-              </div>
+                  Inquire for Price
+                </Link>
+              ) : (
+                <div className="flex gap-3">
+                  {/* Add to Cart */}
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={isAdding}
+                    className={`flex-1 py-4 text-[11px] font-black uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3
+                      ${isSuccess
+                        ? "bg-green-600 text-white"
+                        : "bg-[#4a2c2a] text-white hover:bg-[#3a1c1a] active:scale-[0.98]"
+                      } disabled:opacity-60 disabled:cursor-not-allowed`}
+                  >
+                    {isAdding ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Adding...
+                      </>
+                    ) : isSuccess ? (
+                      <>
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Added to Cart
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" />
+                        </svg>
+                        Add to Cart
+                      </>
+                    )}
+                  </button>
+
+                  {/* Buy Now */}
+                  <button
+                    onClick={() => {
+                      handleAddToCart().then(() => {
+                        router.push("/checkout");
+                      });
+                    }}
+                    disabled={isAdding}
+                    className="flex-1 py-4 text-[11px] font-black uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3 bg-[#4a2c2a] text-white hover:bg-[#a0750a] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+                      <polyline points="22 4 12 14.01 9 11.01" />
+                    </svg>
+                    Buy Now
+                  </button>
+                </div>
+              )}
 
               {/* Wishlist + Share */}
               <div className="flex gap-3">
@@ -1420,7 +1436,7 @@ export default function ProductDetailPage({
 {/* Horizontal preview image for AURL product */}
 {isAurlProduct && (
   <div className="max-w-[1440px] mx-auto px-6 md:px-14 pb-16 pt-10">
-    <div className="w-full bg-[#f8f6f3] rounded-sm overflow-hidden shadow-sm flex items-center justify-center p-4">
+    <div className="w-full bg-transparent rounded-sm overflow-hidden flex items-center justify-center p-4">
       <img
         src={"/tiles/" + "600x600/AURL GRIGIO ARCO (605x605) 16mm (5)--MATT.jpeg".split('/').map(s => encodeURIComponent(s)).join('/')}
         alt="AURL GRIGIO ARCO Horizontal Preview"
@@ -1433,7 +1449,7 @@ export default function ProductDetailPage({
 {/* Horizontal preview image for Pave product */}
 {isPaveProduct && (
   <div className="max-w-[1440px] mx-auto px-6 md:px-14 pb-16 pt-10">
-    <div className="w-full bg-[#f8f6f3] rounded-sm overflow-hidden shadow-sm flex items-center justify-center p-4">
+    <div className="w-full bg-transparent rounded-sm overflow-hidden flex items-center justify-center p-4">
       <img
         src={"/tiles/" + "600x600/PAVE' PARIS G (605x605) 16mm (1).jpeg".split('/').map(s => encodeURIComponent(s)).join('/')}
         alt="PAVE PARIS Horizontal Preview"
@@ -1446,7 +1462,7 @@ export default function ProductDetailPage({
 {/* Horizontal preview image for Salted Concreto product */}
 {isSaltedProduct && (
   <div className="max-w-[1440px] mx-auto px-6 md:px-14 pb-16 pt-10">
-    <div className="w-full bg-[#f8f6f3] rounded-sm overflow-hidden shadow-sm flex items-center justify-center p-4">
+    <div className="w-full bg-transparent rounded-sm overflow-hidden flex items-center justify-center p-4">
       <img
         src={"/tiles/" + "600x600/Salted concreto crema 600x900 x 20mm (1).jpeg".split('/').map(s => encodeURIComponent(s)).join('/')}
         alt="Salted Concreto Horizontal Preview"

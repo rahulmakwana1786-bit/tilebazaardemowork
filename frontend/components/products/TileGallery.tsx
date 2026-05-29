@@ -416,12 +416,12 @@ export default function TileGallery({ initialImages = [] }: TileGalleryProps) {
 
                 <div className="mt-auto">
                   {isPoster ? (
-                    <button
-                      disabled={true}
-                      className="w-full bg-gray-100 text-gray-400 py-3 text-[10px] font-bold uppercase tracking-widest cursor-not-allowed"
+                    <Link
+                      href="/contact"
+                      className="w-full flex justify-center bg-[#222] text-white hover:bg-black py-3 text-[10px] font-bold uppercase tracking-widest transition-colors"
                     >
                       Inquire for Price
-                    </button>
+                    </Link>
                   ) : (
                     <AddToCartButton
                       product={{

@@ -65,12 +65,14 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { FiShoppingCart, FiUser, FiHeart } from "react-icons/fi";
 import CartDrawer from "../common/CartDrawer";
 import { useCart } from "@/context/CartContext";
 import { useAppSelector } from "@/store/hooks";
 
 const Navbar = () => {
+  const pathname = usePathname();
   const { isCartOpen, setCartOpen } = useCart();
   const cartItems = useAppSelector((state) => state.cart.items);
   const { user } = useAppSelector((state) => state.auth);
@@ -156,15 +158,18 @@ useEffect(() => {
 
           {/* Desktop Navigation */}
           <div className="hidden items-center justify-center gap-9 text-[12px] font-bold uppercase tracking-[0.32em] text-[#3e1f1c] md:flex">
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                className="transition-opacity hover:opacity-60"
-              >
-                {link.name}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href || (link.href !== '/' && pathname?.startsWith(link.href));
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className={`transition-all hover:opacity-60 ${isActive ? "text-black font-black drop-shadow-sm" : "opacity-80"}`}
+                >
+                  {link.name}
+                </Link>
+              );
+            })}
           </div>
 
           {/* Desktop Icons */}
@@ -280,17 +285,20 @@ useEffect(() => {
   ${isMenuOpen ? "translate-x-0" : "translate-x-full"}
 `}
         >
-          <div className="flex h-full flex-col items-end justify-center space-y-8 px-8 text-right font-serif text-[16px] uppercase tracking-[0.3em] text-[#4a2c2a]">
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                onClick={() => setIsMenuOpen(false)}
-                className="hover:opacity-60 transition-all"
-              >
-                {link.name}
-              </Link>
-            ))}
+          <div className="flex h-full flex-col items-end justify-center space-y-8 px-8 text-right font-serif text-[16px] uppercase tracking-[0.3em]">
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href || (link.href !== '/' && pathname?.startsWith(link.href));
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`transition-all hover:opacity-60 ${isActive ? "text-black font-black" : "text-[#4a2c2a]"}`}
+                >
+                  {link.name}
+                </Link>
+              );
+            })}
 
             <Link
               href="/wishlist"

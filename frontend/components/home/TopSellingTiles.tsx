@@ -227,6 +227,7 @@ import Link from 'next/link';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addToCartAsync } from '@/store/slices/cartSlice';
 import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
 
 const ALL_PRODUCTS = [
   { name: "POSTER-001", size: "600x1200 mm", price: "15", reviews: 52, img: "/tiles/600x1200/POSTER-001--PUNCHGL.jpg" },
@@ -260,8 +261,7 @@ export default function TopSellingTiles() {
   useEffect(() => {
     const shuffle = () => {
       const result = [...ALL_PRODUCTS]
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 8); // Increased to 8 for a better variety
+        .sort(() => Math.random() - 0.5); // Removed the slice so ALL tiles are shown
       setRandomizedTiles(result);
     };
     shuffle();
@@ -310,17 +310,24 @@ export default function TopSellingTiles() {
           </Link>
         </div>
 
-        <div className="relative group">
-          <div 
-            ref={scrollRef}
-            onScroll={handleScroll} 
-            className="flex gap-8 overflow-x-auto pb-10 snap-x no-scrollbar"
+        <div className="relative overflow-hidden group">
+          <motion.div 
+            className="flex gap-8 w-max"
+            animate={{ x: ["0%", "-50%"] }}
+            transition={{ ease: "linear", duration: 30, repeat: Infinity }}
           >
-            {randomizedTiles.map((tile, index) => {
+            {[...randomizedTiles, ...randomizedTiles].map((tile, index) => {
               const isPOA = tile.name.toUpperCase().includes("POSTER");
 
               return (
-                <div key={`${tile.name}-${index}`} className="min-w-[280px] md:max-w-[320px] flex-shrink-0 snap-start group/card">
+                <motion.div 
+                  key={`${tile.name}-${index}`} 
+                  className="w-[280px] md:w-[320px] flex-shrink-0 group/card"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                  viewport={{ once: true, amount: 0.1 }}
+                >
                   
                   {/* Container designed to handle both 600x600 and 600x1200 */}
                   <div className="relative aspect-[3/4] flex items-center justify-center bg-[#FBFBFB] mb-5 p-6 rounded-[4px] overflow-hidden">
@@ -353,37 +360,26 @@ export default function TopSellingTiles() {
                     {isPOA ? "POA" : `£${tile.price} + VAT`}
                   </p>
 
-                  <button 
-                    onClick={() => handleAddToCart(tile)}
-                    disabled={isPOA || loading}
-                    className={`w-full py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-all
-                      ${isPOA ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-[#4a2c2a] text-white opacity-90 hover:opacity-100 active:scale-[0.98]'}
-                    `}
-                  >
-                    {isPOA ? 'Inquire for Price' : 'Add to Cart'}
-                  </button>
-                </div>
+                  {isPOA ? (
+                    <Link 
+                      href="/contact"
+                      className="w-full flex justify-center py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-all bg-[#222] text-white hover:bg-black"
+                    >
+                      Inquire for Price
+                    </Link>
+                  ) : (
+                    <button 
+                      onClick={() => handleAddToCart(tile)}
+                      disabled={loading}
+                      className="w-full py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-all bg-[#4a2c2a] text-white opacity-90 hover:opacity-100 active:scale-[0.98]"
+                    >
+                      Add to Cart
+                    </button>
+                  )}
+                </motion.div>
               );
             })}
-          </div>
-
-          <div className="mt-4 flex items-center justify-between">
-            <div className="h-[2px] bg-gray-100 flex-grow relative max-w-[400px] overflow-hidden">
-              <div 
-                className="absolute top-0 left-0 h-full bg-[#4a2c2a] transition-all duration-300 ease-out" 
-                style={{ width: `${Math.max(15, scrollProgress)}%` }} 
-              />
-            </div>
-            
-            <div className="flex gap-2">
-              <button onClick={() => scroll('left')} className="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-[#4a2c2a] hover:text-white transition-all active:scale-90">
-                <span className="text-[20px]">‹</span>
-              </button>
-              <button onClick={() => scroll('right')} className="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-[#4a2c2a] hover:text-white transition-all active:scale-90">
-                <span className="text-[20px]">›</span>
-              </button>
-            </div>
-          </div>
+          </motion.div>
         </div>
       </main>
     </section>

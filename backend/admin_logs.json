@@ -1,5 +1,59 @@
 [
   {
+    "id": "3cneste8j",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "LOGOUT",
+    "details": "Logged out of the system",
+    "page": "/admin",
+    "created_at": "2026-05-28T12:34:45.693Z"
+  },
+  {
+    "id": "1c1nl13w9",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "LOGOUT",
+    "details": "Logged out of the system",
+    "page": "/admin",
+    "created_at": "2026-05-28T12:01:31.809Z"
+  },
+  {
+    "id": "5rdd9bdz6",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "LOGIN",
+    "details": "Admin logged in successfully",
+    "page": "/admin",
+    "created_at": "2026-05-28T10:35:38.819Z"
+  },
+  {
+    "id": "w5p29t6ue",
+    "admin_email": "jane@tilebazaar.co.uk",
+    "admin_name": "Jane Smith",
+    "action": "LOGOUT",
+    "details": "Logged out of the system",
+    "page": "/admin",
+    "created_at": "2026-05-28T10:33:25.048Z"
+  },
+  {
+    "id": "hj8dq8ev1",
+    "admin_email": "jane@tilebazaar.co.uk",
+    "admin_name": "Jane Smith",
+    "action": "LOGOUT",
+    "details": "Logged out of the system",
+    "page": "/admin",
+    "created_at": "2026-05-28T09:49:17.903Z"
+  },
+  {
+    "id": "pfxycbhs4",
+    "admin_email": "jane@tilebazaar.co.uk",
+    "admin_name": "Jane Smith",
+    "action": "LOGIN",
+    "details": "Admin logged in successfully",
+    "page": "/admin",
+    "created_at": "2026-05-28T09:25:58.769Z"
+  },
+  {
     "id": "f3ft12esn",
     "admin_email": "jane@tilebazaar.co.uk",
     "admin_name": "Jane Smith",

@@ -1,15 +1,15 @@
 {
   "jane@tilebazaar.co.uk": {
     "email": "jane@tilebazaar.co.uk",
-    "is_logged_in": true,
-    "last_login": "2026-05-27T11:16:20.383Z",
-    "last_logout": "2026-05-27T11:10:07.007Z"
+    "is_logged_in": false,
+    "last_login": "2026-05-28T09:49:18.964Z",
+    "last_logout": "2026-05-28T10:33:25.052Z"
   },
   "admin2@tilebazaar.co.uk": {
     "email": "admin2@tilebazaar.co.uk",
-    "is_logged_in": false,
-    "last_login": "2026-05-27T11:05:56.477Z",
-    "last_logout": "2026-05-27T11:10:04.661Z"
+    "is_logged_in": true,
+    "last_login": "2026-05-28T12:54:26.583Z",
+    "last_logout": "2026-05-28T12:34:45.695Z"
   },
   "admin3@tilebazaar.co.uk": {
     "email": "admin3@tilebazaar.co.uk",
