@@ -170,7 +170,7 @@ export const fetchAdminAccounts = createAsyncThunk<AdminAccount[], void, { rejec
   'admin/fetchAccounts',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/api/admin/admins');
+      const response = await api.get('/api/admin/system-accounts');
       return response.data;
     } catch (err: unknown) {
       const error = err as AxiosError<{ message: string }>;
@@ -183,7 +183,7 @@ export const fetchAdminLogs = createAsyncThunk<AdminLog[], void, { rejectValue: 
   'admin/fetchLogs',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/api/admin/admins/logs');
+      const response = await api.get('/api/admin/system-accounts/logs');
       return response.data;
     } catch (err: unknown) {
       const error = err as AxiosError<{ message: string }>;

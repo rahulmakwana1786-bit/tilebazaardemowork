@@ -44,8 +44,8 @@ router.get("/users", getAllUsers);
 router.get("/users/:id", getUserById);
 
 // Admin Management
-router.get("/admins", getAdminAccounts);
-router.get("/admins/logs", getAdminLogs);
-router.post("/admins/verify", verifyAdminCredentials);
+router.get("/system-accounts", getAdminAccounts);
+router.get("/system-accounts/logs", getAdminLogs);
+router.post("/system-accounts/verify", verifyAdminCredentials);
 
 export default router;

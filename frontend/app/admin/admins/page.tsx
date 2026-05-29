@@ -50,7 +50,7 @@ export default function AdminsManagementPage() {
 
     setIsVerifying(true);
     try {
-      const response = await api.post("/api/admin/admins/verify", {
+      const response = await api.post("/api/admin/system-accounts/verify", {
         email: selectedAdmin.email,
         password
       });
