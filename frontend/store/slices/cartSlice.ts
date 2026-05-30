@@ -20,6 +20,12 @@ export interface CartItem {
   quantity: number;
   unit: string;
   product?: ProductDetails;
+  sqm?: number;
+  boxes?: number;
+  tiles?: number;
+  weight?: number;
+  palletType?: string;
+  deliveryCharge?: number;
 }
 
 interface FetchCartResponse {
@@ -68,7 +74,15 @@ export const fetchCart = createAsyncThunk<
 // 2. Add/Update Item
 export const addToCartAsync = createAsyncThunk<
   void,
-  { product_id: string; quantity: number },
+  {
+    product_id: string;
+    quantity: number;
+    sqm?: number;
+    boxes?: number;
+    tiles?: number;
+    weight?: number;
+    palletType?: string;
+  },
   { rejectValue: string }
 >(
   "cart/addToCart",
@@ -107,13 +121,13 @@ export const removeFromCartAsync = createAsyncThunk<
 // 4. Update Quantity
 export const updateQuantityAsync = createAsyncThunk<
   void,
-  { cartItemId: string; quantity: number },
+  { cartItemId: string; quantity: number; sqm?: number; boxes?: number; tiles?: number; weight?: number; palletType?: string },
   { rejectValue: string; state: RootState }
 >(
   "cart/updateQuantity",
-  async ({ cartItemId, quantity }, { dispatch, rejectWithValue }) => {
+  async ({ cartItemId, quantity, sqm, boxes, tiles, weight, palletType }, { dispatch, rejectWithValue }) => {
     try {
-      await api.patch(`/api/cart/${cartItemId}/quantity`, { quantity });
+      await api.patch(`/api/cart/${cartItemId}/quantity`, { quantity, sqm, boxes, tiles, weight, palletType });
       await dispatch(fetchCart()).unwrap();
     } catch (err) {
       const error = err as AxiosError<{ message: string }>;
@@ -138,6 +152,11 @@ const cartSlice = createSlice({
       );
       if (existingItem) {
         existingItem.quantity += action.payload.quantity;
+        if (action.payload.sqm) existingItem.sqm = (existingItem.sqm || 0) + action.payload.sqm;
+        if (action.payload.boxes) existingItem.boxes = (existingItem.boxes || 0) + action.payload.boxes;
+        if (action.payload.weight) existingItem.weight = (existingItem.weight || 0) + action.payload.weight;
+        if (action.payload.tiles) existingItem.tiles = (existingItem.tiles || 0) + action.payload.tiles;
+        if (action.payload.palletType) existingItem.palletType = action.payload.palletType;
       } else {
         state.items.push(action.payload);
       }
@@ -155,11 +174,16 @@ const cartSlice = createSlice({
     },
     mockUpdateQuantity: (
       state,
-      action: PayloadAction<{ id: string; quantity: number }>,
+      action: PayloadAction<{ id: string; quantity: number; sqm?: number; boxes?: number; tiles?: number; weight?: number; palletType?: string }>,
     ) => {
-      const item = state.items.find((item) => item.id === action.payload.id);
+      const item = state.items.find((i) => i.id === action.payload.id);
       if (item) {
         item.quantity = action.payload.quantity;
+        if (action.payload.sqm !== undefined) item.sqm = action.payload.sqm;
+        if (action.payload.boxes !== undefined) item.boxes = action.payload.boxes;
+        if (action.payload.tiles !== undefined) item.tiles = action.payload.tiles;
+        if (action.payload.weight !== undefined) item.weight = action.payload.weight;
+        if (action.payload.palletType !== undefined) item.palletType = action.payload.palletType;
       }
       state.cartTotal = state.items.reduce(
         (total, item) => total + (item.product?.price || 0) * item.quantity,

@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+﻿import { Request, Response } from 'express';
 import { supabase } from '../config/supabase.js';
 
 export const createOrder = async (req: Request, res: Response) => {
@@ -11,9 +11,7 @@ export const createOrder = async (req: Request, res: Response) => {
     const { data: cartItems, error: cartError } = await supabase
       .from('cart_items')
       .select(`
-        quantity,
-        unit,
-        product_id,
+        quantity, unit, product_id, sqm, boxes, tiles, weight, pallet_type, delivery_charge,
         products (name, image, price, discount_price)
       `)
       .eq('user_id', userId);
@@ -23,7 +21,7 @@ export const createOrder = async (req: Request, res: Response) => {
     }
 
     // 2. Server-side Calculation logic
-    const shipping_cost = 15.00; // Standard UK shipping
+    const shipping_cost = cartItems.reduce((acc, item) => acc + (Number(item.delivery_charge) || 0), 0);
     let subtotal = 0;
 
     const orderItemsToInsert = cartItems.map((item: any) => {
@@ -41,8 +39,7 @@ export const createOrder = async (req: Request, res: Response) => {
         product_name: product?.name || 'Unknown Product',
         product_image: product?.image || '',
         quantity: item.quantity,
-        unit: item.unit || 'sqm',
-        price_at_purchase: unitPrice
+        unit: item.unit || 'sqm', price_at_purchase: unitPrice, sqm: item.sqm, boxes: item.boxes, tiles: item.tiles, weight: item.weight, pallet_type: item.pallet_type, delivery_charge: item.delivery_charge
       };
     });
 

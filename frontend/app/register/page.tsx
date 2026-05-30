@@ -12,7 +12,9 @@ export default function RegisterPage() {
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
-    password: ''
+    password: '',
+    country_code: '+44',
+    phone_number: ''
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -40,7 +42,10 @@ export default function RegisterPage() {
     e.preventDefault();
 
     const result = await dispatch(
-      registerUser(formData)
+      registerUser({
+        ...formData,
+        phone_number: `${formData.country_code}${formData.phone_number}`
+      })
     );
 
     // SUCCESS
@@ -124,6 +129,42 @@ export default function RegisterPage() {
               onChange={handleChange}
               className="w-full mt-1 p-3 text-[#4a2c2a] border-b border-gray-200 focus:border-[#4a2c2a] outline-none text-sm transition-colors"
             />
+          </div>
+
+          {/* Phone Number */}
+          <div>
+            <label
+              htmlFor="phone_number"
+              className="text-[10px] text-[#4a2c2a] font-bold uppercase tracking-tight opacity-60"
+            >
+              Mobile Number
+            </label>
+            <div className="flex gap-2 mt-1">
+              <select
+                name="country_code"
+                value={formData.country_code}
+                onChange={handleChange as any}
+                className="w-1/3 p-3 text-[#4a2c2a] border-b border-gray-200 focus:border-[#4a2c2a] outline-none text-sm transition-colors bg-transparent"
+              >
+                <option value="+44">🇬🇧 +44</option>
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+91">🇮🇳 +91</option>
+                <option value="+61">🇦🇺 +61</option>
+                <option value="+81">🇯🇵 +81</option>
+                <option value="+49">🇩🇪 +49</option>
+                <option value="+33">🇫🇷 +33</option>
+              </select>
+              <input
+                id="phone_number"
+                name="phone_number"
+                type="tel"
+                required
+                placeholder="7700 900077"
+                value={formData.phone_number}
+                onChange={handleChange}
+                className="w-2/3 p-3 text-[#4a2c2a] border-b border-gray-200 focus:border-[#4a2c2a] outline-none text-sm transition-colors"
+              />
+            </div>
           </div>
 
           {/* Password */}

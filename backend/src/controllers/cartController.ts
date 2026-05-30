@@ -43,7 +43,7 @@ const getCategory = (fileName: string) => {
 // 1. Add or Update Item in Cart
 export const addToCart = async (req: Request, res: Response) => {
   try {
-    const { product_id, quantity, unit = 'sqm' } = req.body;
+    const { product_id, quantity, unit = 'sqm', sqm, boxes, tiles, weight, palletType, deliveryCharge } = req.body;
     const user_id = (req as any).user.id;
 
     let finalProductId = product_id;
@@ -124,7 +124,7 @@ export const addToCart = async (req: Request, res: Response) => {
       // 2. Update existing
       const { data, error } = await supabase
         .from('cart_items')
-        .update({ quantity: existingItem.quantity + quantity })
+        .update({ quantity: existingItem.quantity + quantity, sqm, boxes, tiles, weight, pallet_type: palletType, delivery_charge: deliveryCharge })
         .eq('id', existingItem.id)
         .select().single();
       if (error) throw error;
@@ -133,7 +133,7 @@ export const addToCart = async (req: Request, res: Response) => {
       // 3. Insert new
       const { data, error } = await supabase
         .from('cart_items')
-        .insert({ user_id, product_id: finalProductId, quantity, unit })
+        .insert({ user_id, product_id: finalProductId, quantity, unit, sqm, boxes, tiles, weight, pallet_type: palletType, delivery_charge: deliveryCharge })
         .select().single();
       if (error) throw error;
       result = data;
@@ -154,10 +154,7 @@ export const getMyCart = async (req: Request, res: Response) => {
     const { data, error } = await supabase
       .from('cart_items')
       .select(`
-        id,
-        quantity,
-        unit,
-        product:products (
+        id, quantity, unit, sqm, boxes, tiles, weight, pallet_type, delivery_charge, product:products (
           id,
           name,
           price,
@@ -214,7 +211,7 @@ export const removeFromCart = async (req: Request, res: Response) => {
 export const updateCartQuantity = async (req: Request, res: Response) => {
   try {
     const { id } = req.params; // The cart item UUID
-    const { quantity } = req.body;
+    const { quantity, sqm, boxes, tiles, weight, palletType } = req.body;
 
     if (quantity < 1) {
       return res.status(400).json({ message: "Quantity must be at least 1" });
@@ -222,7 +219,14 @@ export const updateCartQuantity = async (req: Request, res: Response) => {
 
     const { data, error } = await supabase
       .from('cart_items')
-      .update({ quantity })
+      .update({ 
+        quantity,
+        sqm,
+        boxes,
+        tiles,
+        weight,
+        pallet_type: palletType
+      })
       .eq('id', id)
       .select()
       .single();

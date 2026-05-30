@@ -8,6 +8,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { addToCartAsync, mockAddToCart } from "@/store/slices/cartSlice";
 import { RootState } from "@/store/store";
 import { useCart } from "@/context/CartContext";
+import TilePackTable from "@/components/products/TilePackTable";
 
 /* ─────────────────────────────────────────────
    Pure helper functions (same logic as TileGallery)
@@ -30,6 +31,9 @@ const formatFileName = (name: string) => {
   const upper = clean.toUpperCase();
   if (upper === "TILE TRIM") {
     return "10mm Straight Edge Aluminium Basalt Effect Tile Trim - 2.5m";
+  }
+  if (upper.includes("VALIDUS")) {
+    return getValidusName(name);
   }
   if (upper.includes("AURL GRIGIO")) {
     return "AURL GRIGIO ARCO";
@@ -68,7 +72,7 @@ const getFileNameSuffix = (fileName: string) => {
 const rightSideVariantsGroup = [
   ["alexa beige", "alexa bianco", "alexa brown", "alexa grey"],
   ["armani gris", "armani ivory"],
-  ["arte fluto grey", "arte fluto white"],
+  ["arte fluo grey", "arte fluo white 1"],
   ["el blue bell dark", "el blue bell light", "el bricko light"],
   ["el smog gold 1", "el smog gris 1"],
   ["el statuario fantastico", "el staturio prime", "el statuario prime"],
@@ -145,10 +149,18 @@ const getProductDetails = (fileName: string) => {
       isAdhesive: true,
       isTrim: false,
     };
-  if (upper.includes("MATTING") || upper.includes("LEVEL"))
+  if (upper.includes("MATTING") || upper.includes("DURA"))
     return {
       price: 6,
       unit: "+vat/sqm",
+      isAccessory: true,
+      isAdhesive: false,
+      isTrim: false,
+    };
+  if (upper.includes("LEVEL"))
+    return {
+      price: 6,
+      unit: "+vat/bag",
       isAccessory: true,
       isAdhesive: false,
       isTrim: false,
@@ -157,8 +169,7 @@ const getProductDetails = (fileName: string) => {
     upper.includes("AURL GRIGIO") ||
     upper.includes("PAVE") ||
     upper.includes("SALT CONCRETO") ||
-    upper.includes("SALTED CONCRETO") ||
-    upper.includes("OUTDOOR")
+    upper.includes("SALTED CONCRETO")
   ) {
     return {
       price: 18,
@@ -350,6 +361,11 @@ export default function ProductDetailPage({
   const imagePath = decodeURIComponent(resolvedParams.slug); // e.g. "600x600/ALEXA BEIGE_R1--GLOSS.jpg"
   const fileNameOnly = imagePath.split("/").pop() || imagePath;
   const dimension = imagePath.split("/")[0] || "N/A"; // folder = dimension, e.g. "600x600"
+  
+  console.log("DEBUG: received slug =", resolvedParams.slug);
+  console.log("DEBUG: decoded imagePath =", imagePath);
+  console.log("DEBUG: fileNameOnly =", fileNameOnly);
+  console.log("DEBUG: dimension =", dimension);
 
   const [selectedAurlImage, setSelectedAurlImage] = useState<string | null>(null);
   const [selectedPaveImage, setSelectedPaveImage] = useState<string | null>(null);
@@ -385,6 +401,9 @@ export default function ProductDetailPage({
   const [showMoreAdhesiveFeats, setShowMoreAdhesiveFeats] = useState(false);
   const [allTiles, setAllTiles] = useState<string[]>([]);
 
+  // Quantity State for accessories
+  const [accessoryQty, setAccessoryQty] = useState(1);
+
   useEffect(() => {
     import("@/app/actions").then((module) => {
       module.getAllTilePaths().then((paths) => setAllTiles(paths));
@@ -405,16 +424,13 @@ export default function ProductDetailPage({
 
     const currentFileName = imagePath.split("/").pop() || imagePath;
     const currentSuffix = getFileNameSuffix(currentFileName).toLowerCase();
-    const currentDimension = imagePath.split("/")[0];
 
     const paths: string[] = [];
     for (const itemName of group) {
-      // Filter candidates to ensure they belong to the same dimension folder
-      const candidates = allTiles.filter((t) => {
-        const tDimension = t.split("/")[0];
-        const tName = t.split("/").pop() || t;
-        return tDimension === currentDimension && getVariantMatchName(tName).toLowerCase() === itemName;
-      });
+      const candidates = allTiles.filter(
+        (t) =>
+          getVariantMatchName(t.split("/").pop() || t).toLowerCase() === itemName
+      );
 
       if (candidates.length > 0) {
         let best = candidates[0];
@@ -470,8 +486,13 @@ export default function ProductDetailPage({
         id: Math.random().toString(),
         user_id: "preview_user",
         product_id: fileNameOnly,
-        quantity: 1,
+        quantity: details.isAccessory || isPoster ? accessoryQty : 1,
         unit: "boxes",
+        sqm: undefined,
+        boxes: undefined,
+        tiles: undefined,
+        weight: undefined,
+        palletType: undefined,
         product: {
           id: fileNameOnly,
           name: displayName,
@@ -492,7 +513,15 @@ export default function ProductDetailPage({
     try {
       setIsAdding(true);
       await dispatch(
-        addToCartAsync({ product_id: fileNameOnly, quantity: 1 }),
+        addToCartAsync({
+          product_id: fileNameOnly,
+          quantity: details.isAccessory || isPoster ? accessoryQty : 1,
+          sqm: undefined,
+          boxes: undefined,
+          tiles: undefined,
+          weight: undefined,
+          palletType: undefined,
+        }),
       ).unwrap();
       setIsSuccess(true);
       setCartOpen(true);
@@ -504,6 +533,34 @@ export default function ProductDetailPage({
       setTimeout(() => setIsSuccess(false), 2500);
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const handleTilePackAddToCart = async (totalSqm: number, totalBoxes: number, totalWeight: number, totalTiles: number) => {
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+    try {
+      setIsAdding(true);
+      await dispatch(
+        addToCartAsync({
+          product_id: fileNameOnly,
+          quantity: totalBoxes,
+          sqm: totalSqm,
+          boxes: totalBoxes,
+          tiles: totalTiles,
+          weight: totalWeight,
+          palletType: totalWeight > 1000 ? "FULL" : "HALF",
+        }),
+      ).unwrap();
+      setIsSuccess(true);
+      setCartOpen(true);
+      setTimeout(() => setIsSuccess(false), 2500);
+    } catch {
+      setIsSuccess(true);
+      setCartOpen(true);
+      setTimeout(() => setIsSuccess(false), 2500);
     }
   };
 
@@ -571,10 +628,10 @@ export default function ProductDetailPage({
               LEFT — Large Product Image
           ════════════════════════════════ */}
           <div className="w-full lg:w-[55%] xl:w-[58%] sticky top-28">
-            <div className="relative w-full aspect-square bg-transparent rounded-sm overflow-hidden flex items-center justify-center p-6 md:p-10 transition-all duration-300">
+            <div className="relative w-full aspect-square bg-[#f8f6f3] rounded-sm overflow-hidden shadow-sm flex items-center justify-center p-6 md:p-10 transition-all duration-300">
               {!imgError ? (
                 <img
-                  src={`/tiles/${displayImagePath.split('/').map(s => encodeURIComponent(s)).join('/')}`}
+                  src={fileNameOnly.toUpperCase().includes('TRIM') ? '/images/accessories/trim/tile-trim.png' : `/tiles/${displayImagePath.split('/').map(s => encodeURIComponent(s)).join('/')}`}
                   alt={displayName}
                   className="w-full h-full object-contain "
                   onError={() => setImgError(true)}
@@ -599,9 +656,9 @@ export default function ProductDetailPage({
               variantPaths.length > 0
             ) && !isAurlProduct && !isPaveProduct && !isSaltedProduct && (
               <div className="mt-4 flex gap-3">
-                <div className="w-20 h-20 bg-transparent border-2 border-[#4a2c2a] rounded-sm overflow-hidden flex items-center justify-center p-1 flex-shrink-0">
+                <div className="w-20 h-20 bg-[#f8f6f3] border-2 border-[#4a2c2a] rounded-sm overflow-hidden flex items-center justify-center p-1 flex-shrink-0">
                   <img
-                    src={`/tiles/${displayImagePath}`}
+                    src={fileNameOnly.toUpperCase().includes('TRIM') ? '/images/accessories/trim/tile-trim.png' : `/tiles/${displayImagePath.split('/').map(s => encodeURIComponent(s)).join('/')}`}
                     alt="thumb"
                     className="w-full h-full object-contain "
                   />
@@ -671,7 +728,7 @@ export default function ProductDetailPage({
                         className="group flex flex-col items-center"
                       >
                         <div
-                          className={`relative w-36 h-24 md:w-40 md:h-28 bg-transparent border-[3px] ${isActive ? "border-black" : "border-transparent"} hover:border-black/40 transition-colors overflow-hidden`}
+                          className={`relative w-36 h-24 md:w-40 md:h-28 bg-[#f8f6f3] border-[3px] ${isActive ? "border-black" : "border-transparent shadow-sm"} hover:border-black/40 transition-colors overflow-hidden`}
                         >
                           <img
                             src={`/tiles/${path}`}
@@ -723,7 +780,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
                         displayImagePath === "600x600/grid_aurl_600x600--MATT.jpg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -746,7 +803,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
                         displayImagePath === "600x600/AURL GRIGIO ARCO (605x605) 16mm--MATT.jpeg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -769,7 +826,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
                         displayImagePath === "600x600/AURL GRIGIO ARCO (605x605) 16mm (1).jpeg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -792,7 +849,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
                         displayImagePath === "600x600/AURL GRIGIO ARCO (605x605) 16mm (2).jpeg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -815,7 +872,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
                         displayImagePath === "600x600/AURL GRIGIO ARCO (605x605) 16mm (3).jpeg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -847,7 +904,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
                         displayImagePath === "600x600/grid_pave_600x600--MATT.jpg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -870,7 +927,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
                         displayImagePath === "600x600/PAVE’ PARIS G (605x605) 16mm.jpeg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -893,7 +950,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
                         displayImagePath === "600x600/PAVE’ PARIS G (605x605) 16mm (2).jpeg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -916,7 +973,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
                         displayImagePath === "600x600/PAVE’ PARIS G (605x605) 16mm (3).jpeg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -939,7 +996,7 @@ export default function ProductDetailPage({
                     className="group flex flex-col items-center cursor-pointer focus:outline-none"
                   >
                     <div
-                      className={`w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${
+                      className={`w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${
                         displayImagePath === "600x600/PAVE’ PARIS G (605x605) 16mm (4).jpeg"
                           ? "border-[#4a2c2a]"
                           : "border-transparent"
@@ -975,7 +1032,7 @@ export default function ProductDetailPage({
                         className="group flex flex-col items-center"
                       >
                         <div
-                          className={`relative w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${isActive ? "border-[#4a2c2a]" : "border-transparent"} hover:border-[#4a2c2a]/50 transition-colors rounded-sm overflow-hidden`}
+                          className={`relative w-24 h-24 md:w-28 md:h-28 bg-[#f8f6f3] border-2 ${isActive ? "border-[#4a2c2a]" : "border-transparent"} hover:border-[#4a2c2a]/50 transition-colors rounded-sm overflow-hidden`}
                         >
                           <img
                             src={`/tiles/${path}`}
@@ -1304,21 +1361,29 @@ export default function ProductDetailPage({
               </div>
             )}
 
-            {/* ── Add to Cart + Buy Now + Wishlist + Share ── */}
-            <div className="flex flex-col gap-3 mb-8">
-              {/* Add to Cart + Buy Now / Inquire for Price */}
-              {isPoster ? (
-                <Link
-                  href="/contact"
-                  className="w-full py-4 text-[11px] font-black uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3 bg-[#222] text-white hover:bg-black shadow-lg"
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                    <polyline points="22,6 12,13 2,6" />
-                  </svg>
-                  Inquire for Price
-                </Link>
-              ) : (
+            {/* ── TilePackTable (only if regular tile) ── */}
+            {!details.isAccessory && !isPoster && (
+              <TilePackTable
+                pricePerSqm={details.price}
+                tileSize={dimension}
+                onAddToCart={handleTilePackAddToCart}
+              />
+            )}
+
+            {/* ── Add to Cart + Buy Now (only for accessories & posters) ── */}
+            {(details.isAccessory || isPoster) && (
+              <div className="flex flex-col gap-3 mb-8">
+                {/* Accessory Quantity Selector */}
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-xs font-bold text-[#4a2c2a] uppercase tracking-wider">Quantity:</span>
+                  <div className="flex items-center border border-[#4a2c2a]/20 rounded-sm">
+                    <button onClick={() => setAccessoryQty(Math.max(1, accessoryQty - 1))} className="px-4 py-2 hover:bg-[#4a2c2a]/5 transition-colors text-[#4a2c2a]">-</button>
+                    <span className="px-4 py-2 font-bold text-[#4a2c2a]">{accessoryQty}</span>
+                    <button onClick={() => setAccessoryQty(accessoryQty + 1)} className="px-4 py-2 hover:bg-[#4a2c2a]/5 transition-colors text-[#4a2c2a]">+</button>
+                  </div>
+                </div>
+                
+                {/* Add to Cart + Buy Now — side by side */}
                 <div className="flex gap-3">
                   {/* Add to Cart */}
                   <button
@@ -1369,10 +1434,11 @@ export default function ProductDetailPage({
                     Buy Now
                   </button>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Wishlist + Share */}
-              <div className="flex gap-3">
+            {/* Wishlist + Share (Available for all) */}
+            <div className="flex gap-3 mb-8">
                 <button
                   onClick={handleWishlist}
                   className={`flex-1 py-3.5 border text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all duration-300
@@ -1405,9 +1471,7 @@ export default function ProductDetailPage({
                 </button>
               </div>
             </div>
-
           </div>
-        </div>
             </main>
 
 {/* Bottom Navigation */}
@@ -1436,7 +1500,7 @@ export default function ProductDetailPage({
 {/* Horizontal preview image for AURL product */}
 {isAurlProduct && (
   <div className="max-w-[1440px] mx-auto px-6 md:px-14 pb-16 pt-10">
-    <div className="w-full bg-transparent rounded-sm overflow-hidden flex items-center justify-center p-4">
+    <div className="w-full bg-[#f8f6f3] rounded-sm overflow-hidden shadow-sm flex items-center justify-center p-4">
       <img
         src={"/tiles/" + "600x600/AURL GRIGIO ARCO (605x605) 16mm (5)--MATT.jpeg".split('/').map(s => encodeURIComponent(s)).join('/')}
         alt="AURL GRIGIO ARCO Horizontal Preview"
@@ -1449,7 +1513,7 @@ export default function ProductDetailPage({
 {/* Horizontal preview image for Pave product */}
 {isPaveProduct && (
   <div className="max-w-[1440px] mx-auto px-6 md:px-14 pb-16 pt-10">
-    <div className="w-full bg-transparent rounded-sm overflow-hidden flex items-center justify-center p-4">
+    <div className="w-full bg-[#f8f6f3] rounded-sm overflow-hidden shadow-sm flex items-center justify-center p-4">
       <img
         src={"/tiles/" + "600x600/PAVE' PARIS G (605x605) 16mm (1).jpeg".split('/').map(s => encodeURIComponent(s)).join('/')}
         alt="PAVE PARIS Horizontal Preview"
@@ -1462,7 +1526,7 @@ export default function ProductDetailPage({
 {/* Horizontal preview image for Salted Concreto product */}
 {isSaltedProduct && (
   <div className="max-w-[1440px] mx-auto px-6 md:px-14 pb-16 pt-10">
-    <div className="w-full bg-transparent rounded-sm overflow-hidden flex items-center justify-center p-4">
+    <div className="w-full bg-[#f8f6f3] rounded-sm overflow-hidden shadow-sm flex items-center justify-center p-4">
       <img
         src={"/tiles/" + "600x600/Salted concreto crema 600x900 x 20mm (1).jpeg".split('/').map(s => encodeURIComponent(s)).join('/')}
         alt="Salted Concreto Horizontal Preview"

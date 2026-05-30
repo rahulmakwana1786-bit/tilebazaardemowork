@@ -8,13 +8,13 @@
   "admin2@tilebazaar.co.uk": {
     "email": "admin2@tilebazaar.co.uk",
     "is_logged_in": true,
-    "last_login": "2026-05-28T12:54:26.583Z",
-    "last_logout": "2026-05-28T12:34:45.695Z"
+    "last_login": "2026-05-29T10:51:31.351Z",
+    "last_logout": "2026-05-29T10:51:28.387Z"
   },
   "admin3@tilebazaar.co.uk": {
     "email": "admin3@tilebazaar.co.uk",
-    "is_logged_in": false,
-    "last_login": "2026-05-27T10:35:17.819Z",
+    "is_logged_in": true,
+    "last_login": "2026-05-30T06:22:03.859Z",
     "last_logout": "2026-05-27T10:49:46.354Z"
   },
   "admin4@tilebazaar.co.uk": {
@@ -22,5 +22,10 @@
     "is_logged_in": false,
     "last_login": "2026-05-27T10:39:22.323Z",
     "last_logout": "2026-05-27T10:49:46.354Z"
+  },
+  "undefined": {
+    "is_logged_in": true,
+    "last_login": "2026-05-29T12:54:13.359Z",
+    "last_logout": null
   }
 }

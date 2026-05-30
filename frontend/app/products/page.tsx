@@ -1,38 +1,124 @@
 import React, { Suspense } from "react";
-import fs from "fs";
-import path from "path";
 import TileGallery from "@/components/products/TileGallery";
 import ApplicationPossibilities from "@/components/home/ApplicationPossibilities";
+import { getAllTilePaths } from "@/app/actions";
 
-export default function ProductsPage() {
-  const tilesDirectory = path.join(process.cwd(), "public/tiles");
-  let allFiles: string[] = [];
+// Force dynamic rendering so we always get the latest products
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-  const getFilesRecursively = (dir: string): string[] => {
-    let results: string[] = [];
-    if (!fs.existsSync(dir)) return results;
+async function getProducts() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tilebazaardemowork-production.up.railway.app';
+  try {
+    const res = await fetch(`${apiUrl}/api/products`, { cache: 'no-store' });
+    if (!res.ok) {
+      throw new Error('Failed to fetch products');
+    }
+    return res.json();
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    return [];
+  }
+}
 
-    const list = fs.readdirSync(dir);
-    list.forEach((file) => {
-      const filePath = path.join(dir, file);
-      const stat = fs.statSync(filePath);
+export default async function ProductsPage() {
+  const products = await getProducts();
+  const allTiles = await getAllTilePaths();
 
-      if (stat && stat.isDirectory()) {
-        results = results.concat(getFilesRecursively(filePath));
-      } else if (/\.(jpg|jpeg|png|webp|avif)$/i.test(file)) {
-        const relativePath = path.relative(tilesDirectory, filePath);
-        results.push(relativePath.replace(/\\/g, '/'));
+  const getVariantMatchName = (name: string) =>
+    name
+      .split("--")[0]
+      .replace(/\.[^/.]+$/, "")
+      .replace(/[-_]/g, " ")
+      .replace(/\bR[1-9]\b/gi, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // Enhance products with their exact local image path
+    const matchedPaths = new Set<string>();
+    
+    let enhancedProducts = products.map((product: any) => {
+      let bestMatchPath = ""; 
+      
+      // Hardcode specific known exceptions
+      if (product.name.toUpperCase().includes("AURL GRIGIO")) {
+        bestMatchPath = "600x600/AURL GRIGIO ARCO (605x605) 16mm--MATT.jpeg";
+      } else if (product.name.toUpperCase().includes("PAVE")) {
+        bestMatchPath = "600x600/PAVE’ PARIS G (605x605) 16mm.jpeg";
+      } else if (product.name.toUpperCase().includes("SALT CONCRETO") || product.name.toUpperCase().includes("SALTED CONCRETO")) {
+        bestMatchPath = "600x600/Salted concreto crema 600x900 x 20mm.jpeg";
+      } else {
+        // Find the exact matching path in allTiles
+        let possibleMatches: string[] = [];
+        for (const t of allTiles) {
+          const fileName = t.split("/").pop() || t;
+          const tMatch = getVariantMatchName(fileName).toLowerCase();
+          const pMatch = getVariantMatchName(product.name).toLowerCase();
+          
+          if (tMatch === pMatch || fileName.toLowerCase().includes(product.name.toLowerCase().replace(/_r1/i, ''))) {
+            possibleMatches.push(t);
+          }
+        }
+
+        if (possibleMatches.length > 0) {
+          const dbSize = (product.size || "").toLowerCase().trim();
+          bestMatchPath = possibleMatches.find(p => p.toLowerCase().includes(dbSize)) || possibleMatches[0];
+        }
       }
+
+      if (bestMatchPath) {
+        matchedPaths.add(bestMatchPath);
+        // Force size to 600x600 if the image is from the 600x600 folder
+        if (bestMatchPath.startsWith("600x600/") || bestMatchPath.includes("600x600")) {
+          product.size = "600x600";
+        }
+      }
+
+      // Update price for outdoor tiles
+      const upName = product.name.toUpperCase();
+      if (upName.includes("AURL GRIGIO") || upName.includes("PAVE") || upName.includes("SALT CONCRETO") || upName.includes("SALTED CONCRETO")) {
+        product.price = 18;
+      }
+  
+      return { ...product, originalPath: bestMatchPath || product.image };
     });
 
-    return results;
-  };
+    // Auto-inject missing 600x600 tiles from the local folder
+    const missingTiles = allTiles.filter((t) => {
+      if (matchedPaths.has(t)) return false;
+      const is600x600 = t.startsWith("600x600/") || t.includes("600x600");
+      if (!is600x600) return false;
+      if (t.match(/\(\d+\)/)) return false; // Skip alternate variant images
+      if (t.toLowerCase().includes('poster')) return false;
+      if (t.toLowerCase().includes('grid_')) return false;
+      return true;
+    }).map((t, index) => {
+      const fileName = t.split("/").pop() || t;
+      const lowerName = fileName.toLowerCase();
+      const finish = lowerName.includes('gloss') ? 'GLOSS' : lowerName.includes('matt') ? 'MATT' : lowerName.includes('carving') ? 'CARVING' : 'MATT';
+      
+      const upName = lowerName.toUpperCase();
+      const isOutdoor = upName.includes("AURL GRIGIO") || upName.includes("PAVE") || upName.includes("SALT CONCRETO") || upName.includes("SALTED CONCRETO");
 
-  try {
-    allFiles = getFilesRecursively(tilesDirectory);
-  } catch (e) {
-    console.error("Error reading tiles directory:", e);
-  }
+      return {
+        id: `local-600-${index}`,
+        name: getVariantMatchName(fileName),
+        slug: t,
+        price: isOutdoor ? 18 : 15,
+        discount_price: null,
+        stock: 100,
+        category: 'Tiles',
+        finish: finish,
+        size: '600x600',
+        thickness: '9mm',
+        material: 'Porcelain',
+        image: t,
+        originalPath: t,
+        is_active: true
+      };
+    });
+
+    enhancedProducts = [...enhancedProducts, ...missingTiles];
 
   return (
     <div className="bg-white min-h-screen">
@@ -47,7 +133,7 @@ export default function ProductsPage() {
           </header>
 
           <Suspense fallback={<div className="py-40 flex justify-center"><div className="animate-spin h-10 w-10 border-b-2 border-[#4a2c2a] rounded-full"></div></div>}>
-            <TileGallery initialImages={allFiles} />
+            <TileGallery initialProducts={enhancedProducts} />
           </Suspense>
         </main>
       </section>

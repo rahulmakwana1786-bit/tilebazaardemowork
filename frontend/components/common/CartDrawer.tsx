@@ -130,6 +130,8 @@ import {
 import { useRouter } from "next/navigation";
 
 const getProductImagePath = (product: any) => {
+  if (product?.name?.toUpperCase().includes('TRIM')) return '/images/accessories/trim/tile-trim.png';
+
   if (!product || !product.image) return "/placeholder-tile.jpg";
   if (product.image.startsWith("http")) return product.image;
   if (product.image.startsWith("/tiles/")) return product.image;
@@ -157,29 +159,36 @@ const getProductImagePath = (product: any) => {
   return `/tiles/${size}/${product.image}`;
 };
 
-// Derive the correct price from the product name using the same rules
-// as TileGallery so the cart always reflects up-to-date frontend pricing
-// even when the backend DB still stores an older value.
-const getFrontendPrice = (product: any): number => {
-  const name = ((product?.name || '') + ' ' + (product?.slug || '') + ' ' + (product?.image || '')).toUpperCase();
+const getProductPrice = (product: any) => {
+  if (!product) return 0;
+  // If we have a valid price from the database (Supabase), ALWAYS use it!
+  const backendPrice = Number(product.price);
+  if (!isNaN(backendPrice) && backendPrice > 0) {
+    const discountPrice = Number(product.discount_price) || 0;
+    if (discountPrice > 0 && discountPrice < backendPrice) return discountPrice;
+    return backendPrice;
+  }
+  
+  // Fallback to hardcoded logic only if DB price is somehow missing
+  const name = (product.name || '').toUpperCase();
+  if (name.includes('VALIDUS') || name.includes('ALTUS') || name.includes('RELO') || name.includes('STRUCTA')) return 12;
   if (name.includes('TRIM')) return 8;
+  if (name.includes('DURA')) return 6;
+  if (name.includes('LEVEL')) return 6;
+  if (name.includes('POPULAR FRONT')) return 6;
   if (name.includes('SPACER') || name.includes('WEDGE')) return 6;
   if (name.includes('ADHESIVE') || name.includes('GLUE')) return 12;
   if (name.includes('MATTING')) return 6;
-  // New Arrivals & Outdoor tiles are priced at £18
   if (name.includes('AURL GRIGIO') || name.includes('PAVE') || name.includes('SALT CONCRETO') || name.includes('SALTED CONCRETO') || name.includes('OUTDOOR')) return 18;
-  // All other regular tiles are £15
   return 15;
 };
 
-const getProductPrice = (product: any) => {
-  if (!product) return 0;
-  const backendPrice = Number(product.price) || 0;
-  const discountPrice = Number(product.discount_price) || 0;
-  // If backend has a valid discount price lower than regular price, honour it
-  if (discountPrice > 0 && discountPrice < backendPrice) return discountPrice;
-  // Always use frontend price to avoid showing stale DB values
-  return getFrontendPrice(product);
+const getUnitString = (product: any) => {
+  const upper = product?.name?.toUpperCase() || "";
+  if (upper.includes("TRIM")) return "/ +vat/piece";
+  if (upper.includes("DURA") || upper.includes("MATTING")) return "/ +vat/sqm";
+  if (product?.category?.toUpperCase().includes('ACCESS') || product?.category?.toUpperCase().includes('ADHESIVE') || upper.includes("SPACER") || upper.includes("WEDGE") || upper.includes("LEVEL") || upper.includes("GLUE") || upper.includes("ADHESIVE") || upper.includes("VALIDUS") || upper.includes("POPULAR FRONT")) return "/ +vat/bag";
+  return "/ m²";
 };
 
 export default function CartDrawer({
@@ -197,11 +206,45 @@ export default function CartDrawer({
   const { token } = useAppSelector((state) => state.auth);
 
   // 2. MANUAL CALCULATIONS
+  let totalSqm = 0;
+  let totalBoxes = 0;
+  let totalWeight = 0;
+  let totalTilesCount = 0;
+  
+  cartItems.forEach(item => {
+    const isAccessory = (item.product as any)?.category?.toUpperCase().includes('ACCESS') || (item.product as any)?.category?.toUpperCase().includes('ADHESIVE');
+    if (!isAccessory) {
+      const boxes = item.boxes || item.quantity;
+      const weight = item.weight || (boxes * 29);
+      const tiles = item.tiles || (boxes * (item.product?.size?.includes('1200') ? 2 : 4));
+      const sqm = item.sqm || (boxes * 1.44);
+      
+      totalBoxes += boxes;
+      totalWeight += weight;
+      totalTilesCount += tiles;
+      totalSqm += sqm;
+    }
+  });
+
+  const fullPallets = Math.floor(totalWeight / 1000);
+  const remainder = totalWeight % 1000;
+  let remainderType = "";
+  if (remainder > 0) {
+    if (remainder <= 25) remainderType = "PARCEL";
+    else if (remainder <= 250) remainderType = "QUARTER";
+    else if (remainder <= 500) remainderType = "HALF";
+    else if (remainder <= 750) remainderType = "FULL LIGHT";
+    else remainderType = "FULL";
+  }
+  const totalPalletsEstimate = totalWeight > 0 ? `${fullPallets} FULL${remainderType ? ` & 1 ${remainderType}` : ""}` : "None";
+
   const totalCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
   const totalPrice = cartItems.reduce((acc, item) => {
+    const isAccessory = (item.product as any)?.category?.toUpperCase().includes('ACCESS') || (item.product as any)?.category?.toUpperCase().includes('ADHESIVE');
+    const sqm = !isAccessory ? (item.sqm || item.quantity * 1.44) : 0;
     return (
       acc +
-      getProductPrice(item.product) * item.quantity
+      getProductPrice(item.product) * (isAccessory ? item.quantity : sqm)
     );
   }, 0);
 
@@ -232,6 +275,43 @@ export default function CartDrawer({
       }
     } else {
       handleRemove(cartItemId);
+    }
+  };
+
+  const handleUpdateSqm = async (
+    cartItemId: string,
+    currentSqm: number,
+    delta: number,
+    tileSize: string
+  ) => {
+    const newSqm = Math.max(1, currentSqm + delta);
+    const tilesPerBox = tileSize.includes("1200") ? 2 : 4;
+    const boxes = Math.ceil(newSqm / 1.44);
+    const totalTiles = boxes * tilesPerBox;
+    const weight = boxes * 29;
+
+    const fullPallets = Math.floor(weight / 1000);
+    const remainder = weight % 1000;
+    let remainderType = "";
+    if (remainder > 0) {
+      if (remainder <= 25) remainderType = "PARCEL";
+      else if (remainder <= 250) remainderType = "QUARTER";
+      else if (remainder <= 500) remainderType = "HALF";
+      else if (remainder <= 750) remainderType = "FULL LIGHT";
+      else remainderType = "FULL";
+    }
+    const palletType = `${fullPallets} FULL${remainderType ? ` & 1 ${remainderType}` : ""}`;
+
+    if (token) {
+      try {
+        await dispatch(
+          updateQuantityAsync({ cartItemId, quantity: boxes, sqm: newSqm, boxes, tiles: totalTiles, weight, palletType }),
+        ).unwrap();
+      } catch (e) {
+        dispatch(mockUpdateQuantity({ id: cartItemId, quantity: boxes, sqm: newSqm, boxes, tiles: totalTiles, weight, palletType }));
+      }
+    } else {
+      dispatch(mockUpdateQuantity({ id: cartItemId, quantity: boxes, sqm: newSqm, boxes, tiles: totalTiles, weight, palletType }));
     }
   };
 
@@ -276,6 +356,26 @@ export default function CartDrawer({
           </button>
         </div>
 
+        {/* Free Delivery Progress Bar */}
+        <div className="px-6 py-4 bg-[#f8f6f3] border-b border-gray-100">
+          <div className="flex justify-between text-xs font-bold uppercase tracking-widest mb-2">
+            <span className="text-[#4a2c2a]/60">Free Delivery Progress</span>
+            {totalSqm >= 500 ? (
+              <span className="text-green-600">FREE DELIVERY QUALIFIED!</span>
+            ) : (
+              <span className="text-[#d4af37]">{Math.max(0, 500 - totalSqm).toFixed(2)} SQM to go</span>
+            )}
+          </div>
+          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className={`h-full transition-all duration-500 ease-out ${
+                totalSqm >= 500 ? "bg-green-600" : "bg-[#d4af37]"
+              }`}
+              style={{ width: `${Math.min((totalSqm / 500) * 100, 100)}%` }}
+            />
+          </div>
+        </div>
+
         {/* Scrollable Items Area */}
         <div className="flex-grow overflow-y-auto p-6 no-scrollbar space-y-8 relative z-10">
           {" "}
@@ -305,13 +405,17 @@ export default function CartDrawer({
   );
 }
 
+              const isAccessory = (product as any)?.category?.toUpperCase().includes('ACCESS') || (product as any)?.category?.toUpperCase().includes('ADHESIVE');
+              const itemSqm = !isAccessory ? (item.sqm || item.quantity * 1.44) : undefined;
+              const itemBoxes = !isAccessory ? (item.boxes || item.quantity) : undefined;
+
               return (
                 <div
                   key={item.id}
                   className="flex gap-4 pb-6 border-b border-gray-50 last:border-0 relative z-10"
                 >
                   {" "}
-                  <div className="relative w-24 h-24 flex-shrink-0 bg-[#f9f9f9] rounded-sm">
+                  <div className="relative w-28 h-28 flex-shrink-0 bg-[#f9f9f9] rounded-sm">
                     <Image
                       src={getProductImagePath(product)}
                       alt={product.name}
@@ -322,51 +426,60 @@ export default function CartDrawer({
                   </div>
                   <div className="flex flex-col flex-grow">
                     <div className="flex justify-between items-start">
-                      <h4 className="text-[11px] font-bold uppercase text-[#4a2c2a] leading-tight pr-4">
+                      <h4 className="text-[13px] font-bold uppercase text-[#4a2c2a] leading-tight pr-4">
                         {product.name}
                       </h4>
                       <button
                         onClick={() => handleRemove(item.id)}
-                        className="text-gray-300 hover:text-red-500"
+                        className="text-gray-300 hover:text-red-500 p-1"
                       >
-                        <IoTrashOutline size={18} />
+                        <IoTrashOutline size={20} />
                       </button>
                     </div>
 
-                    <p className="text-[11px] text-[#4a2c2a] mt-1 tracking-tighter">
-                      <span className="text-[12px]">
-                        £{getProductPrice(product)} /m²{" "}
+                    <p className="text-[12px] text-[#4a2c2a] mt-1 tracking-tighter">
+                      <span className="text-[13px] font-bold">
+                        £{getProductPrice(product)} {getUnitString(product)}{" "}
                       </span>
                       • {product.size}
+                      {itemSqm !== undefined && <span> • {itemSqm.toFixed(2)} SQM ({itemBoxes} boxes)</span>}
                     </p>
 
                     <div className="flex items-center justify-between mt-auto pt-4">
                       <div className="flex items-center border border-gray-200">
                         <button
-                          onClick={() =>
-                            handleUpdateQuantity(item.id, item.quantity, -1)
-                          }
-                          className="p-1.5 text-[#4a2c2a] hover:bg-gray-50"
+                          onClick={() => {
+                            if (itemSqm !== undefined) {
+                              handleUpdateSqm(item.id, itemSqm, -1, product.size || "600x600");
+                            } else {
+                              handleUpdateQuantity(item.id, item.quantity, -1);
+                            }
+                          }}
+                          className="p-2 text-[#4a2c2a] hover:bg-gray-50 transition-colors"
                         >
-                          <IoRemoveOutline size={14} />
+                          <IoRemoveOutline size={16} />
                         </button>
-                        <span className="px-3 text-[#4a2c2a] text-[12px] font-bold min-w-[30px] text-center">
-                          {item.quantity}
+                        <span className="px-4 text-[#4a2c2a] text-[14px] font-bold min-w-[35px] text-center">
+                          {itemSqm !== undefined ? itemSqm.toFixed(0) : item.quantity}
                         </span>
                         <button
-                          onClick={() =>
-                            handleUpdateQuantity(item.id, item.quantity, 1)
-                          }
-                          className="p-1.5 text-[#4a2c2a] hover:bg-gray-50"
+                          onClick={() => {
+                            if (itemSqm !== undefined) {
+                              handleUpdateSqm(item.id, itemSqm, 1, product.size || "600x600");
+                            } else {
+                              handleUpdateQuantity(item.id, item.quantity, 1);
+                            }
+                          }}
+                          className="p-2 text-[#4a2c2a] hover:bg-gray-50 transition-colors"
                         >
-                          <IoAddOutline size={14} />
+                          <IoAddOutline size={16} />
                         </button>
                       </div>
-                      <p className="text-[13px] font-bold text-[#4a2c2a]">
+                      <p className="text-[16px] font-bold text-[#4a2c2a]">
                         £
                         {(
                           getProductPrice(product) *
-                          item.quantity
+                          (itemSqm !== undefined ? itemSqm : item.quantity)
                         ).toFixed(2)}
                       </p>
                     </div>
@@ -380,36 +493,51 @@ export default function CartDrawer({
         {/* Footer */}
         {cartItems.length > 0 && (
           <div className="p-6 border-t border-gray-100">
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-[11px] font-bold uppercase opacity-50 tracking-widest">
-                Subtotal
+            <div className="grid grid-cols-3 gap-2 mb-4 bg-gray-50 p-3 rounded-sm border border-gray-100">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-1">Boxes</p>
+                <p className="text-sm font-bold text-[#4a2c2a]">{totalBoxes}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-1">Weight</p>
+                <p className="text-sm font-bold text-[#4a2c2a]">{totalWeight} kg</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-1">Pallets</p>
+                <p className="text-xs font-bold text-[#4a2c2a]">{totalPalletsEstimate}</p>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center mb-3 mt-4">
+              <span className="text-[13px] font-bold uppercase text-[#4a2c2a] tracking-widest">
+                Material Subtotal
               </span>
-              <span className="text-[11px] font-bold text-[#4a2c2a]">
+              <span className="text-[13px] font-bold text-[#4a2c2a]">
                 £{totalPrice.toFixed(2)}
               </span>
             </div>
             <div className="flex justify-between items-center mb-3">
-              <span className="text-[11px] font-bold uppercase opacity-50 tracking-widest">
+              <span className="text-[13px] font-bold uppercase text-[#4a2c2a] tracking-widest">
                 VAT (20%)
               </span>
-              <span className="text-[11px] font-bold text-[#4a2c2a]">
+              <span className="text-[13px] font-bold text-[#4a2c2a]">
                 £{(totalPrice * 0.20).toFixed(2)}
               </span>
             </div>
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-[11px] font-bold uppercase opacity-50 tracking-widest">
-                Logistics
+            <div className="flex justify-between items-center mb-3 pt-3 border-t border-gray-100">
+              <span className="text-[13px] font-bold uppercase text-[#4a2c2a] tracking-widest">
+                Delivery (Logistics)
               </span>
-              <span className="text-[11px] font-bold text-[#4a2c2a]">
-                £15.00
+              <span className="text-[13px] font-bold text-[#4a2c2a]">
+                Calculated at checkout
               </span>
             </div>
             <div className="flex justify-between items-center mb-6 pt-3 border-t border-gray-100">
-              <span className="text-[11px] font-bold uppercase opacity-50 tracking-widest">
-                Total
+              <span className="text-[13px] font-bold uppercase text-[#4a2c2a] tracking-widest">
+                Total Estimate
               </span>
-              <span className="text-[20px] font-bold text-[#4a2c2a]">
-                £{(totalPrice * 1.20 + 15).toFixed(2)}
+              <span className="text-[22px] font-bold text-[#4a2c2a]">
+                £{(totalPrice * 1.20).toFixed(2)}
               </span>
             </div>
             <button
@@ -417,7 +545,7 @@ export default function CartDrawer({
                 onClose();
                 router.push("/checkout");
               }}
-              className="w-full bg-[#4a2c2a] text-white py-5 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-black transition-colors"
+              className="w-full bg-[#4a2c2a] text-white py-5 text-[13px] font-bold uppercase tracking-[0.2em] hover:bg-[#3a1c1a] transition-colors rounded-sm"
             >
               Checkout
             </button>

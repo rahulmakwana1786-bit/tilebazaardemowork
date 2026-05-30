@@ -6,68 +6,73 @@ import Link from "next/link";
 import AddToCartButton from "@/components/common/AddToCartButton";
 import { useSearchParams, usePathname } from "next/navigation";
 
-interface TileGalleryProps {
-  initialImages?: string[];
+export interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  price: number;
+  discount_price: number | null;
+  image: string;
+  size: string;
+  finish: string;
+  category: string;
+  material: string;
+  thickness: string;
+  stock: number;
+  is_active: boolean;
+  originalPath?: string;
 }
 
-const getFinish = (fileName: string) => {
-  const name = fileName.toUpperCase();
-  if (name.includes("--GLOSS")) return "GLOSSY";
-  if (name.includes("--MATT") && !name.includes("--MATTING")) return "MATT";
-  if (name.includes("PAVE") || name.includes("SALTED CONCRETO")) return "MATT";
-  if (name.includes("--CARVING")) return "CARVING";
-  if (name.includes("--HIGHGL")) return "HIGH GLOSS";
-  if (name.includes("--PUNCHGL")) return "POSTER";
-  if (name.includes("--LOVIN")) return "LOVELIN";
-  if (name.includes("--TPH")) return "TYPHOON";
-  return "OTHER";
+export const getValidImageUrl = (product: Product) => {
+  if (product.name?.toUpperCase().includes('TRIM')) return '/images/accessories/trim/tile-trim.png';
+
+  if (!product.image) return '/placeholder.png';
+  if (product.image.startsWith('http') || product.image.startsWith('/')) {
+    return product.image;
+  }
+  
+  if (product.originalPath) {
+    return `/tiles/${product.originalPath.split('/').map(encodeURIComponent).join('/')}`;
+  }
+  
+  if (product.category?.toUpperCase() === 'ACCESSORY' || product.category?.toUpperCase() === 'ACCESSORIES') {
+    return `/tiles/accessories/${encodeURIComponent(product.image)}`;
+  }
+  
+  if (product.size) {
+    return `/tiles/${product.size.toLowerCase()}/${encodeURIComponent(product.image)}`;
+  }
+  
+  return `/tiles/${encodeURIComponent(product.image)}`;
 };
 
-const formatFileName = (name: string) => {
-  let clean = name.split("--")[0].replace(/\.[^/.]+$/, "").replace(/-/g, " ").trim();
-  const upper = clean.toUpperCase();
-  if (upper === "TILE TRIM") {
-    return "10mm Straight Edge Aluminium Basalt Effect Tile Trim - 2.5m";
+export const getRawImagePath = (product: Product) => {
+  if (product.originalPath) return product.originalPath;
+  
+  if (product.image && (product.image.startsWith('http') || product.image.startsWith('/'))) {
+    const parts = product.image.split('/');
+    return parts.slice(-2).join('/'); 
   }
-  if (upper.includes("AURL GRIGIO")) {
-    return "AURL GRIGIO ARCO";
+  if (product.category?.toUpperCase() === 'ACCESSORY' || product.category?.toUpperCase() === 'ACCESSORIES') {
+    return `accessories/${product.image}`;
   }
-  if (upper.includes("PAVE")) {
-    return "PAVE’ PARIS G";
+  if (product.size) {
+    return `${product.size.toLowerCase()}/${product.image}`;
   }
-  if (upper.includes("SALT CONCRETO") || upper.includes("SALTED CONCRETO")) {
-    return "Salted concreto crema";
-  }
-  return clean;
+  return product.image;
 };
 
-const getProductDetails = (fileName: string) => {
-  const upper = fileName.toUpperCase();
-  if (upper.includes("TRIM")) return { price: 8, unit: "+vat/piece", isAccessory: true };
-  if (upper.includes("SPACER")) return { price: 6, unit: "+vat/bag", isAccessory: true };
-  if (upper.includes("WEDGE")) return { price: 6, unit: "+vat/bag", isAccessory: true };
-  if (upper.includes("ADHESIVE") || upper.includes("GLUE")) return { price: 12, unit: "+vat/bag", isAccessory: true };
-  if (upper.includes("MATTING")) return { price: 6, unit: "+vat/sqm", isAccessory: true };
-  // New Arrivals & Outdoor tiles are priced at £18
-  if (upper.includes("AURL GRIGIO") || upper.includes("PAVE") || upper.includes("SALT CONCRETO") || upper.includes("SALTED CONCRETO") || upper.includes("OUTDOOR")) return { price: 18, unit: "m²", isAccessory: false };
-  // All other tiles default to £15
-  return { price: 15, unit: "m²", isAccessory: false };
-};
+interface TileGalleryProps {
+  initialProducts?: Product[];
+}
 
-export default function TileGallery({ initialImages = [] }: TileGalleryProps) {
+export default function TileGallery({ initialProducts = [] }: TileGalleryProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
   const finishFilter = searchParams.get("finish");
   const sizeFilter = searchParams.get("size");
-
-  const accessoriesList = [
-    { id: "trim", name: "Tile Trims" },
-    { id: "spacer", name: "Spacers" },
-    { id: "wedge", name: "Wedges" },
-    { id: "adhesive", name: "Adhesive Bags" },
-    { id:"matting",name:"dura Elite matting"}
-  ];
 
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [showTopBtn, setShowTopBtn] = useState(false);
@@ -83,92 +88,87 @@ export default function TileGallery({ initialImages = [] }: TileGalleryProps) {
   const { uniqueSizes, uniqueFinishes } = useMemo(() => {
     const sizes = new Set<string>();
     const finishes = new Set<string>();
-    initialImages.forEach((img) => {
-      const parts = img.split("/");
-      if (parts.length > 1) sizes.add(parts[0]);
-      const finish = getFinish(img.split("/").pop() || img);
-      if (finish !== "OTHER") finishes.add(finish);
+    let hasAccessories = false;
+    
+    initialProducts.forEach((product) => {
+      if (product.size) {
+        const lowerSize = product.size.toLowerCase();
+        if (lowerSize !== "20 kg" && lowerSize !== "20kg") {
+          sizes.add(lowerSize);
+        }
+      }
+      if (product.finish) {
+        const upperFinish = product.finish.toUpperCase();
+        if (upperFinish !== "OTHER" && upperFinish !== "POLISHED") {
+          finishes.add(upperFinish);
+        }
+      }
+      if (product.category?.toUpperCase() === 'ACCESSORIES' || product.category?.toUpperCase() === 'ACCESSORY') {
+        hasAccessories = true;
+      }
     });
+    
+    if (hasAccessories) sizes.add("accessories");
+    
     return {
       uniqueSizes: Array.from(sizes).sort(),
       uniqueFinishes: Array.from(finishes).sort(),
     };
-  }, [initialImages]);
+  }, [initialProducts]);
 
   const filteredTiles = useMemo(() => {
-    return initialImages.filter((img) => {
-      const fileName = img.split("/").pop() || img;
-      const finish = getFinish(fileName);
-      const parts = img.split("/");
-      const size = parts.length > 1 ? parts[0] : "OTHER";
+    const filtered = initialProducts.filter((product) => {
+      if (!product.is_active) return false;
 
-      const upperName = fileName.toUpperCase();
+      const upperName = product.name.toUpperCase();
+      const productFinish = product.finish ? product.finish.toUpperCase() : "";
 
-      // Only show the main AURL image in the products listing, and hide variant/grid images
-      if (upperName.startsWith("AURL") && (upperName.includes("(1)") || upperName.includes("(2)") || upperName.includes("(3)") || upperName.includes("(5)"))) {
-        return false;
-      }
-      if (upperName.startsWith("GRID_AURL")) {
-        return false;
-      }
+      const isNewArrival = 
+        product.category?.toUpperCase() === "NEW ARRIVALS" || 
+        upperName.includes("NEW") ||
+        upperName.includes("AURL GRIGIO") ||
+        upperName.includes("SALTED CONCRETO") ||
+        upperName.includes("SALT CONCRETO") ||
+        upperName.includes("PAVE");
 
-      // Only show the main PAVE PARIS image in the products listing, and hide variant/grid images
-      if (upperName.includes("PAVE") && (upperName.includes("(1)") || upperName.includes("(2)") || upperName.includes("(3)") || upperName.includes("(4)"))) {
-        return false;
-      }
-      if (upperName.includes("GRID_PAVE")) {
-        return false;
-      }
-
-      // Hide horizontal preview for SALTED CONCRETO in listing
-      if (upperName.includes("SALTED CONCRETO") && upperName.includes("(1)")) {
-        return false;
-      }
+      const matchesFinish =
+        !finishFilter ||
+        (finishFilter === "NEW ARRIVALS"
+          ? isNewArrival
+          : productFinish === finishFilter);
+          
+      const isAccessory = product.category?.toUpperCase() === 'ACCESSORIES' || product.category?.toUpperCase() === 'ACCESSORY';
+      
+      let matchesSize = false;
       if (sizeFilter === "accessories") {
-        let matchesAccessory = true;
-        if (finishFilter) {
-          if (finishFilter === "trim")
-            matchesAccessory = upperName.includes("TRIM");
-          else if (finishFilter === "spacer")
-            matchesAccessory = upperName.includes("SPACER");
-          else if (finishFilter === "wedge")
-            matchesAccessory = upperName.includes("WEDGE");
-          else if (finishFilter === "adhesive")
-            matchesAccessory =
-              upperName.includes("ADHESIVE") || upperName.includes("GLUE");
-          else if (finishFilter === "matting")
-            matchesAccessory = upperName.includes("MATTING");
-          else matchesAccessory = false;
-        } else {
-          matchesAccessory =
-            upperName.includes("TRIM") ||
-            upperName.includes("SPACER") ||
-            upperName.includes("WEDGE") ||
-            upperName.includes("ADHESIVE") ||
-            upperName.includes("GLUE") ||
-            upperName.includes("MATTING");
-        }
-        return matchesAccessory;
+        matchesSize = isAccessory;
+      } else if (!sizeFilter) {
+        matchesSize = !isAccessory;
       } else {
-        const isAccessory =
-          upperName.includes("TRIM") ||
-          upperName.includes("SPACER") ||
-          upperName.includes("WEDGE") ||
-          upperName.includes("ADHESIVE") ||
-          upperName.includes("GLUE") ||
-          upperName.includes("MATTING");
-        if (isAccessory) return false;
-
-        const matchesFinish =
-          !finishFilter ||
-          (finishFilter === "NEW ARRIVALS"
-            ? upperName.startsWith("EXP") || upperName.startsWith("TC") || upperName.startsWith("AURL") || upperName.includes("PAVE") || upperName.includes("SALTED CONCRETO")
-            : finish === finishFilter);
-        const matchesSize = !sizeFilter || size === sizeFilter;
-        return matchesFinish && matchesSize;
+        matchesSize = !isAccessory && product.size?.toLowerCase() === sizeFilter.toLowerCase();
       }
+      
+      return matchesFinish && matchesSize;
     });
-  }, [finishFilter, sizeFilter, initialImages]);
+
+    return filtered.sort((a, b) => {
+      const getPriority = (p: Product) => {
+        const pSize = p.size?.toLowerCase();
+        const pFinish = p.finish?.toUpperCase();
+        const pName = p.name?.toUpperCase();
+        
+        if (pSize === '600x1200') return 1;
+        if (pFinish?.includes('POSTER') || pName?.includes('POSTER')) return 2;
+        if (pSize === '600x600') return 3;
+        return 4;
+      };
+      
+      const priorityDiff = getPriority(a) - getPriority(b);
+      if (priorityDiff !== 0) return priorityDiff;
+      // If same priority, sort alphabetically
+      return a.name.localeCompare(b.name);
+    });
+  }, [finishFilter, sizeFilter, initialProducts]);
 
   // Helper to create URLs for filters
   const createFilterUrl = (type: "size" | "finish", value: string | null) => {
@@ -224,105 +224,58 @@ export default function TileGallery({ initialImages = [] }: TileGalleryProps) {
               }`}
             >
               {size}
-            </Link>
+          </Link>
           ))}
         </div>
       </div>
 
-      {/* Conditional Sub-Filter */}
-      {sizeFilter === "accessories" ? (
-        <div className="text-center">
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 mb-6">
-            Accessory Type
-          </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <Link
-              href={createFilterUrl("finish", null)}
-              scroll={false}
-              onClick={() => setIsMobileFilterOpen(false)}
-              className={`px-7 border rounded-full transition-all duration-300 inline-flex flex-col items-center justify-center min-h-[48px] hover:scale-105 ${
-                finishFilter === null
-                  ? "bg-[#4a2c2a] text-white border-[#4a2c2a] shadow-lg scale-105"
-                  : "bg-white text-[#5e7e95] border-gray-100 hover:border-gray-200"
-              }`}
-            >
-              <span className="text-[10px] font-bold uppercase tracking-widest">
-                All Types
-              </span>
-            </Link>
+      <div className="text-center">
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 mb-6">
+          Surface Finish
+        </p>
+        <div className="flex flex-wrap justify-center gap-3">
+          <Link
+            href={createFilterUrl("finish", null)}
+            scroll={false}
+            onClick={() => setIsMobileFilterOpen(false)}
+            className={`px-7 py-3 text-[10px] font-bold uppercase tracking-widest border rounded-full transition-all duration-300 inline-block ${
+              finishFilter === null
+                ? "bg-[#4a2c2a] text-white border-[#4a2c2a] shadow-lg"
+                : "bg-white text-[#5e7e95] border-gray-100 hover:border-gray-200"
+            }`}
+          >
+            All Finishes
+          </Link>
 
-            {accessoriesList.map((acc) => (
-              <Link
-                key={acc.id}
-                href={createFilterUrl("finish", acc.id)}
-                scroll={false}
-                onClick={() => setIsMobileFilterOpen(false)}
-                className={`px-7 border rounded-full transition-all duration-300 inline-flex flex-col items-center justify-center min-w-[140px] min-h-[48px] hover:scale-105 ${
-                  finishFilter === acc.id
-                    ? "bg-[#4a2c2a] text-white border-[#4a2c2a] shadow-lg scale-105"
-                    : "bg-white text-[#5e7e95] border-gray-100 hover:border-gray-200"
-                }`}
-              >
-                <span className="text-[10px] font-bold uppercase tracking-widest mb-[2px]">
-                  {acc.name}
-                </span>
-                <span
-                  className={`text-[9px] font-medium tracking-wider ${finishFilter === acc.id ? "text-white/70" : "text-gray-400"}`}
-                >
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="text-center">
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 mb-6">
-            Surface Finish
-          </p>
-          <div className="flex flex-wrap justify-center gap-3">
+          <Link
+            href={createFilterUrl("finish", "NEW ARRIVALS")}
+            scroll={false}
+            onClick={() => setIsMobileFilterOpen(false)}
+            className={`px-7 py-3 text-[10px] font-bold uppercase tracking-widest border rounded-full transition-all duration-300 inline-block ${
+              finishFilter === "NEW ARRIVALS"
+                ? "bg-[#4a2c2a] text-white border-[#4a2c2a] shadow-lg"
+                : "bg-white text-[#5e7e95] border-gray-100 hover:border-gray-200"
+            }`}
+          >
+            New Arrivals
+          </Link>
+          {uniqueFinishes.map((finish) => (
             <Link
-              href={createFilterUrl("finish", null)}
+              key={finish}
+              href={createFilterUrl("finish", finish)}
               scroll={false}
               onClick={() => setIsMobileFilterOpen(false)}
               className={`px-7 py-3 text-[10px] font-bold uppercase tracking-widest border rounded-full transition-all duration-300 inline-block ${
-                finishFilter === null
+                finishFilter === finish
                   ? "bg-[#4a2c2a] text-white border-[#4a2c2a] shadow-lg"
                   : "bg-white text-[#5e7e95] border-gray-100 hover:border-gray-200"
               }`}
             >
-              All Finishes
+              {finish}
             </Link>
-
-            <Link
-              href={createFilterUrl("finish", "NEW ARRIVALS")}
-              scroll={false}
-              onClick={() => setIsMobileFilterOpen(false)}
-              className={`px-7 py-3 text-[10px] font-bold uppercase tracking-widest border rounded-full transition-all duration-300 inline-block ${
-                finishFilter === "NEW ARRIVALS"
-                  ? "bg-[#4a2c2a] text-white border-[#4a2c2a] shadow-lg"
-                  : "bg-white text-[#5e7e95] border-gray-100 hover:border-gray-200"
-              }`}
-            >
-              New Arrivals
-            </Link>
-            {uniqueFinishes.map((finish) => (
-              <Link
-                key={finish}
-                href={createFilterUrl("finish", finish)}
-                scroll={false}
-                onClick={() => setIsMobileFilterOpen(false)}
-                className={`px-7 py-3 text-[10px] font-bold uppercase tracking-widest border rounded-full transition-all duration-300 inline-block ${
-                  finishFilter === finish
-                    ? "bg-[#4a2c2a] text-white border-[#4a2c2a] shadow-lg"
-                    : "bg-white text-[#5e7e95] border-gray-100 hover:border-gray-200"
-                }`}
-              >
-                {finish}
-              </Link>
-            ))}
-          </div>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 
@@ -355,18 +308,15 @@ export default function TileGallery({ initialImages = [] }: TileGalleryProps) {
 
       {/* Product Grid (Matching Screenshot & requested design) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-14">
-        {filteredTiles.map((imageName) => {
-          const fileNameOnly = imageName.split("/").pop() || imageName;
-          const finish = getFinish(fileNameOnly);
-          const details = getProductDetails(fileNameOnly);
-          const isPoster = fileNameOnly.toUpperCase().includes("POSTER");
+        {filteredTiles.map((product) => {
+          const isPoster = product.finish?.toUpperCase().includes("POSTER") || product.name?.toUpperCase().includes("POSTER");
           return (
-            <div key={imageName} className="group flex flex-col">
+            <div key={product.id} className="group flex flex-col">
               {/* Boxed Aspect Ratio like the original design */}
-              <Link href={`/products/${encodeURIComponent(imageName)}`} className="relative w-full aspect-[5/4] bg-[#fbfbfb] flex items-center justify-center p-6 mb-5 overflow-hidden group/image cursor-pointer">
+              <Link href={`/products/${encodeURIComponent(product.originalPath || getRawImagePath(product))}`} className="relative w-full aspect-[5/4] bg-[#fbfbfb] flex items-center justify-center p-6 mb-5 overflow-hidden group/image cursor-pointer">
                 <Image
-                  src={`/tiles/${imageName.split('/').map(s => encodeURIComponent(s)).join('/')}`}
-                  alt={fileNameOnly}
+                  src={getValidImageUrl(product)}
+                  alt={product.name}
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                   className="object-contain p-8 mix-blend-multiply transition-transform duration-700 group-hover/image:scale-105"
@@ -380,17 +330,17 @@ export default function TileGallery({ initialImages = [] }: TileGalleryProps) {
                 </div>
 
                 {/* Finish Badge */}
-                {finish && finish !== "OTHER" && !details.isAccessory && (
+                {product.finish && (
                   <div className="absolute top-4 left-4 bg-white px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-[#4a2c2a] shadow-sm z-30">
-                    {finish}
+                    {product.finish}
                   </div>
                 )}
               </Link>
 
               <div className="flex flex-col flex-grow text-left px-2">
-                <Link href={`/products/${encodeURIComponent(imageName)}`} className="hover:text-[#4a2c2a]/70 transition-colors">
+                <Link href={`/products/${product.slug}`} className="hover:text-[#4a2c2a]/70 transition-colors">
                   <h3 className="text-[12px] font-bold uppercase mb-3 text-left">
-                    {formatFileName(fileNameOnly)}
+                    {product.name}
                   </h3>
                 </Link>
 
@@ -400,16 +350,20 @@ export default function TileGallery({ initialImages = [] }: TileGalleryProps) {
                   ) : (
                     <>
                       <span className="text-[16px] font-medium text-[#4a2c2a]">
-                        £{details.price.toFixed(2)}{" "}
+                        £{product.price.toFixed(2)}{" "}
                         <span className="text-[11px] font-normal text-gray-400">
-                          / {details.unit}
+                          {(() => {
+                            const upper = product.name?.toUpperCase() || "";
+                            if (upper.includes("TRIM")) return "/ +vat/piece";
+                            if (upper.includes("DURA") || upper.includes("MATTING")) return "/ +vat/sqm";
+                            if (product.category?.toUpperCase().includes('ACCESS') || product.category?.toUpperCase().includes('ADHESIVE') || upper.includes("SPACER") || upper.includes("WEDGE") || upper.includes("LEVEL") || upper.includes("GLUE") || upper.includes("ADHESIVE") || upper.includes("VALIDUS")) return "/ +vat/bag";
+                            return "/ m²";
+                          })()}
                         </span>
                       </span>
-                      {!details.isAccessory && (
-                        <span className="text-[12px] line-through text-gray-300 mb-[2px]">
-                          £{(details.price + 5).toFixed(2)}
-                        </span>
-                      )}
+                      <span className="text-[12px] line-through text-gray-300 mb-[2px]">
+                        £{(product.price + 5).toFixed(2)}
+                      </span>
                     </>
                   )}
                 </div>
@@ -425,10 +379,10 @@ export default function TileGallery({ initialImages = [] }: TileGalleryProps) {
                   ) : (
                     <AddToCartButton
                       product={{
-                        id: fileNameOnly,
-                        name: formatFileName(fileNameOnly),
-                        image: `/tiles/${imageName}`,
-                        price: details.price,
+                        id: product.id,
+                        name: product.name,
+                        image: product.image,
+                        price: product.price,
                       }}
                     />
                   )}

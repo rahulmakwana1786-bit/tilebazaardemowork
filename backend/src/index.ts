@@ -11,6 +11,8 @@ import orderRoutes from './routes/orderRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import inquiryRoutes from './routes/inquiryRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import deliveryRoutes from './routes/deliveryRoutes.js';
+import couponRoutes from './routes/couponRoutes.js';
 
 dotenv.config();
 
@@ -51,7 +53,9 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/inquiries', inquiryRoutes);
+app.use('/api/delivery', deliveryRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/coupons', couponRoutes);
 
 // 3. Rate Limiting
 const limiter = rateLimit({
@@ -72,3 +76,4 @@ app.listen(PORT, () => {
 });
 
 // nodemon restart trigger
+

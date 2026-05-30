@@ -1,7 +1,11 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase.js';
 import * as paypal from '../utils/paypalService.js';
+import Stripe from 'stripe';
 
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
+  apiVersion: '2023-10-16' as any,
+});
 /**
  * Initiates the checkout payment by:
  * 1. Performing server-side validation and calculations on the user's cart.
@@ -12,7 +16,7 @@ import * as paypal from '../utils/paypalService.js';
 export const createPaypalPayment = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    const { address_line1, address_line2, city, postcode, country = 'United Kingdom' } = req.body;
+    const { address_line1, address_line2, city, postcode, country = 'United Kingdom', coupon_code } = req.body;
 
     if (!address_line1 || !city || !postcode) {
       return res.status(400).json({ message: "Address, city, and postcode are required fields." });
@@ -57,7 +61,28 @@ export const createPaypalPayment = async (req: Request, res: Response) => {
     });
 
     const vat_amount = subtotal * 0.20; // 20% VAT
-    const total_amount = subtotal + vat_amount + shipping_cost;
+    let total_amount = subtotal + vat_amount + shipping_cost;
+    
+    let discount_amount = 0;
+    let final_coupon = null;
+    if (coupon_code) {
+      const { data: coupon } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', coupon_code.toUpperCase())
+        .eq('active', true)
+        .single();
+        
+      if (coupon) {
+        final_coupon = coupon.code;
+        if (coupon.type === 'percentage') {
+          discount_amount = (subtotal + vat_amount) * (Number(coupon.value) / 100);
+        } else if (coupon.type === 'fixed') {
+          discount_amount = Number(coupon.value);
+        }
+        total_amount = Math.max(0, total_amount - discount_amount);
+      }
+    }
 
     // 3. Create the pending local order in Supabase
     const { data: order, error: orderError } = await supabase
@@ -67,6 +92,8 @@ export const createPaypalPayment = async (req: Request, res: Response) => {
         total_amount: Number(total_amount.toFixed(2)),
         vat_amount: Number(vat_amount.toFixed(2)),
         shipping_cost,
+        discount_amount: Number(discount_amount.toFixed(2)),
+        coupon_code: final_coupon,
         currency: 'GBP',
         address_line1,
         address_line2,
@@ -211,6 +238,135 @@ export const capturePaypalPayment = async (req: Request, res: Response) => {
 
   } catch (err: any) {
     console.error("Capture PayPal Payment Error:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const createStripePaymentIntent = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const { address_line1, address_line2, city, postcode, country = 'United Kingdom', coupon_code } = req.body;
+
+    if (!address_line1 || !city || !postcode) {
+      return res.status(400).json({ message: "Address, city, and postcode are required fields." });
+    }
+
+    // 1. Fetch user's cart items
+    const { data: cartItems, error: cartError } = await supabase
+      .from('cart_items')
+      .select(`
+        quantity,
+        unit,
+        product_id,
+        products (name, image, price, discount_price)
+      `)
+      .eq('user_id', userId);
+
+    if (cartError || !cartItems || cartItems.length === 0) {
+      return res.status(400).json({ message: "Your cart is empty." });
+    }
+
+    // 2. Server-side calculations
+    const shipping_cost = 15.00; // Standard UK shipping
+    let subtotal = 0;
+
+    const orderItemsToInsert = cartItems.map((item: any) => {
+      const product = Array.isArray(item.products) ? item.products[0] : item.products;
+      const basePrice = Number(product?.price) || 0;
+      const discountPrice = Number(product?.discount_price) || 0;
+      const unitPrice = (discountPrice > 0 && discountPrice < basePrice) 
+        ? discountPrice 
+        : basePrice;
+      subtotal += unitPrice * item.quantity;
+
+      return {
+        product_id: item.product_id,
+        product_name: product?.name || 'Unknown Product',
+        product_image: product?.image || '',
+        quantity: item.quantity,
+        unit: item.unit || 'sqm',
+        price_at_purchase: unitPrice
+      };
+    });
+
+    const vat_amount = subtotal * 0.20; // 20% VAT
+    let total_amount = subtotal + vat_amount + shipping_cost;
+    
+    let discount_amount = 0;
+    let final_coupon = null;
+    if (coupon_code) {
+      const { data: coupon } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', coupon_code.toUpperCase())
+        .eq('active', true)
+        .single();
+        
+      if (coupon) {
+        final_coupon = coupon.code;
+        if (coupon.type === 'percentage') {
+          discount_amount = (subtotal + vat_amount) * (Number(coupon.value) / 100);
+        } else if (coupon.type === 'fixed') {
+          discount_amount = Number(coupon.value);
+        }
+        total_amount = Math.max(0, total_amount - discount_amount);
+      }
+    }
+
+    // 3. Create the pending local order in Supabase
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .insert([{ 
+        user_id: userId, 
+        total_amount: Number(total_amount.toFixed(2)),
+        vat_amount: Number(vat_amount.toFixed(2)),
+        shipping_cost,
+        discount_amount: Number(discount_amount.toFixed(2)),
+        coupon_code: final_coupon,
+        currency: 'GBP',
+        address_line1,
+        address_line2,
+        city,
+        postcode,
+        country,
+        status: 'pending',
+        payment_status: 'unpaid'
+      }])
+      .select().single();
+
+    if (orderError) throw orderError;
+
+    // 4. Insert items into order_items linked to the new local Order ID
+    const finalOrderItems = orderItemsToInsert.map(item => ({
+      ...item,
+      order_id: order.id
+    }));
+
+    const { error: itemsError } = await supabase.from('order_items').insert(finalOrderItems);
+    if (itemsError) throw itemsError;
+
+    // 5. Create Stripe PaymentIntent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(total_amount * 100), // Stripe expects amount in pence/cents
+      currency: 'gbp',
+      metadata: {
+        order_id: order.id,
+        user_id: userId
+      },
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    });
+
+    res.status(201).json({
+      message: 'Stripe payment intent created successfully',
+      clientSecret: paymentIntent.client_secret,
+      orderId: order.id,
+      total: total_amount
+    });
+
+  } catch (err: any) {
+    console.error("Create Stripe Payment Error:", err.message);
     res.status(500).json({ message: err.message });
   }
 };
