@@ -95,7 +95,7 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState({ address: "", postcode: "", country: "" });
 
   const [paymentMethod, setPaymentMethod] = useState<"paypal" | "stripe">("paypal");
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  
 
   const [couponCode, setCouponCode] = useState("");
   const [discount, setDiscount] = useState<{ code: string; type: string; value: number } | null>(null);
@@ -207,22 +207,26 @@ export default function CheckoutPage() {
 
   const isFormValid = formData.firstName.trim() !== "" && formData.lastName.trim() !== "" && formData.email.trim() !== "" && formData.phone.trim() !== "" && formData.address.trim() !== "" && formData.city.trim() !== "" && formData.postcode.trim() !== "" && formData.country.trim() !== "" && errors.address === "" && errors.postcode === "" && errors.country === "";
 
-  useEffect(() => {
-    if (paymentMethod === "stripe" && isFormValid) {
-       api.post("/api/payments/create-payment-intent", {
-         amount: grandTotal,
-         currency: "gbp",
-         discountCode: discount?.code,
-       }).then(res => {
-         setClientSecret(res.data.clientSecret);
-         setCreatedLocalOrderId(res.data.orderId);
-         localOrderIdRef.current = res.data.orderId;
-       }).catch(err => {
-         console.error("Stripe Intent Error:", err);
-         setErrorMsg("Failed to initialize card payment");
-       });
+    const createStripeIntent = async () => {
+    try {
+      const res = await api.post("/api/payments/create-payment-intent", {
+        amount: grandTotal,
+        currency: "gbp",
+        discountCode: discount?.code,
+        address_line1: formData.address,
+        city: formData.city,
+        postcode: formData.postcode,
+        country: formData.country,
+      });
+      setCreatedLocalOrderId(res.data.orderId);
+      localOrderIdRef.current = res.data.orderId;
+      return res.data;
+    } catch (err: any) {
+      console.error("Stripe Intent Error:", err);
+      setErrorMsg("Failed to initialize card payment");
+      return null;
     }
-  }, [paymentMethod, isFormValid, grandTotal, discount?.code]);
+  };
 
   if (!isMounted) return null;
 
@@ -345,15 +349,18 @@ export default function CheckoutPage() {
                           <PayPalButtons style={{ layout: "vertical", color: "gold", shape: "rect", label: "checkout", tagline: false }} createOrder={async () => { setIsProcessing(true); setErrorMsg(null); try { const response = await api.post("/api/payments/create-order", { address_line1: formData.address, city: formData.city, postcode: formData.postcode, country: formData.country, discountCode: discount?.code }); setCreatedLocalOrderId(response.data.orderId); localOrderIdRef.current = response.data.orderId; return response.data.paypalOrderId; } catch (err: any) { setIsProcessing(false); setErrorMsg(err.response?.data?.message || "Failed to initiate payment"); throw err; } }} onApprove={async (data) => { try { const orderId = localOrderIdRef.current || createdLocalOrderId; await api.post("/api/payments/capture-order", { orderId: orderId, paypalOrderId: data.orderID }); dispatch(clearCart()); setIsSuccess(true); setIsProcessing(false); } catch (err: any) { setIsProcessing(false); setErrorMsg(err.response?.data?.message || "Failed to capture payment"); } }} onError={(err) => { setIsProcessing(false); setErrorMsg("An error occurred during PayPal checkout. Please check details or try again."); }} onCancel={() => setIsProcessing(false)} />
                         </PayPalScriptProvider>
                       </div>
-                    ) : clientSecret ? (
-                      <div className="animate-in fade-in duration-300 bg-white p-4 border border-gray-200">
-                        <Elements stripe={stripePromise} options={{ clientSecret }}>
-                          <StripeCheckoutForm onSuccess={() => setIsSuccess(true)} orderId={localOrderIdRef.current || ""} />
-                        </Elements>
-                      </div>
                     ) : (
-                      <div className="w-full py-5 border border-gray-200 bg-gray-50 text-gray-400 flex justify-center items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /><span>Initializing Payment...</span></div>
-                    )}
+                        <div className="animate-in fade-in duration-300 bg-white p-4 border border-gray-200">
+                          <Elements stripe={stripePromise}>
+                            <StripeCheckoutForm 
+                              onSuccess={() => setIsSuccess(true)} 
+                              createIntent={createStripeIntent} 
+                              isFormValid={isFormValid} 
+                              formData={formData} 
+                            />
+                          </Elements>
+                        </div>
+                      )}
                   </div>
                 </>
               )}
