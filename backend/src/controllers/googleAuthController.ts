@@ -6,7 +6,8 @@ import { transporter } from '../config/mail.js';
 import crypto from 'crypto';
 import { otpStore } from './otpController.js';
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 export const googleLogin = async (req: Request, res: Response) => {
   try {
@@ -19,7 +20,7 @@ export const googleLogin = async (req: Request, res: Response) => {
     // Verify the Google token
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
 
@@ -92,7 +93,7 @@ export const googleRegister = async (req: Request, res: Response) => {
     // Verify the Google token
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
 

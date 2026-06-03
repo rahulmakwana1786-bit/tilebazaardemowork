@@ -80,28 +80,10 @@ export default function TileGallery({ initialImages = [] }: TileGalleryProps) {
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
-  const { uniqueSizes, uniqueFinishes } = useMemo(() => {
-    const sizes = new Set<string>();
-    const finishes = new Set<string>();
-    initialImages.forEach((img) => {
-      const parts = img.split("/");
-      if (parts.length > 1) sizes.add(parts[0]);
-      const finish = getFinish(img.split("/").pop() || img);
-      if (finish !== "OTHER") finishes.add(finish);
-    });
-    return {
-      uniqueSizes: Array.from(sizes).sort(),
-      uniqueFinishes: Array.from(finishes).sort(),
-    };
-  }, [initialImages]);
-
-  const filteredTiles = useMemo(() => {
-    return initialImages.filter((img) => {
+  const deduplicatedImages = useMemo(() => {
+    // First, filter out the variant/grid images that shouldn't be in the gallery at all
+    const baseImages = initialImages.filter((img) => {
       const fileName = img.split("/").pop() || img;
-      const finish = getFinish(fileName);
-      const parts = img.split("/");
-      const size = parts.length > 1 ? parts[0] : "OTHER";
-
       const upperName = fileName.toUpperCase();
 
       // Only show the main AURL image in the products listing, and hide variant/grid images
@@ -124,6 +106,65 @@ export default function TileGallery({ initialImages = [] }: TileGalleryProps) {
       if (upperName.includes("SALTED CONCRETO") && upperName.includes("(1)")) {
         return false;
       }
+      
+      return true;
+    });
+
+    const grouped = new Map<string, string[]>();
+    baseImages.forEach(img => {
+      const fileName = img.split("/").pop() || img;
+      const baseName = formatFileName(fileName).toLowerCase();
+      // Only group by base name and size to ensure we don't accidentally remove a matt version of a completely different size
+      const size = img.split("/").length > 1 ? img.split("/")[0] : "OTHER";
+      const key = `${baseName}_${size}`;
+      
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key)!.push(img);
+    });
+
+    const result: string[] = [];
+    grouped.forEach((images) => {
+      if (images.length > 1) {
+        const nonMatt = images.filter(img => {
+          const fileName = img.split("/").pop() || img;
+          return getFinish(fileName) !== "MATT";
+        });
+        
+        if (nonMatt.length > 0) {
+          // If a non-MATT version exists, discard the MATT versions from the gallery
+          result.push(...nonMatt);
+        } else {
+          result.push(...images);
+        }
+      } else {
+        result.push(images[0]);
+      }
+    });
+    return result;
+  }, [initialImages]);
+
+  const { uniqueSizes, uniqueFinishes } = useMemo(() => {
+    const sizes = new Set<string>();
+    const finishes = new Set<string>();
+    deduplicatedImages.forEach((img) => {
+      const parts = img.split("/");
+      if (parts.length > 1) sizes.add(parts[0]);
+      const finish = getFinish(img.split("/").pop() || img);
+      if (finish !== "OTHER") finishes.add(finish);
+    });
+    return {
+      uniqueSizes: Array.from(sizes).sort(),
+      uniqueFinishes: Array.from(finishes).sort(),
+    };
+  }, [deduplicatedImages]);
+
+  const filteredTiles = useMemo(() => {
+    return deduplicatedImages.filter((img) => {
+      const fileName = img.split("/").pop() || img;
+      const finish = getFinish(fileName);
+      const parts = img.split("/");
+      const size = parts.length > 1 ? parts[0] : "OTHER";
+      const upperName = fileName.toUpperCase();
       if (sizeFilter === "accessories") {
         let matchesAccessory = true;
         if (finishFilter) {
@@ -168,7 +209,7 @@ export default function TileGallery({ initialImages = [] }: TileGalleryProps) {
         return matchesFinish && matchesSize;
       }
     });
-  }, [finishFilter, sizeFilter, initialImages]);
+  }, [finishFilter, sizeFilter, deduplicatedImages]);
 
   // Helper to create URLs for filters
   const createFilterUrl = (type: "size" | "finish", value: string | null) => {

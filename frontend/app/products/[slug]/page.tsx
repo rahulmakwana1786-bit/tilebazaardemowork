@@ -69,7 +69,7 @@ const getFileNameSuffix = (fileName: string) => {
 const rightSideVariantsGroup = [
   ["alexa beige", "alexa bianco", "alexa brown", "alexa grey"],
   ["armani gris", "armani ivory"],
-  ["arte fluto grey", "arte fluto white"],
+  ["arte fluo grey", "arte fluo white 1"],
   ["el blue bell dark", "el blue bell light", "el bricko light"],
   ["el smog gold 1", "el smog gris 1"],
   ["el statuario fantastico", "el staturio prime", "el statuario prime"],
