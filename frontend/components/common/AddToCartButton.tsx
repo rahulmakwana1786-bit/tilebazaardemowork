@@ -14,6 +14,8 @@ interface ProductProps {
     name: string;
     image: string;
     price: number;
+    category?: string;
+    size?: string;
   };
 }
 
@@ -40,7 +42,8 @@ export default function AddToCartButton({ product }: ProductProps) {
         name: product.name,
         price: product.price,
         image: product.image,
-        size: "600x1200",
+        size: product.size || "600x1200",
+        category: product.category || "",
         slug: product.id
       }
     }));

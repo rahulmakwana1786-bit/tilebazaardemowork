@@ -56,6 +56,7 @@ import {
 import { fetchDashboardStats, fetchAllCustomers, fetchProjectInquiries, clearAdminData } from "@/store/slices/adminSlice";
 import { fetchAdminProducts, clearProductData } from "@/store/slices/productSlice";
 import { fetchAllOrders, clearOrders } from "@/store/slices/orderSlice";
+import AdminLogin from "@/components/admin/AdminLogin";
 
 const navLinks = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -106,13 +107,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setIsHydrated(true);
   }, []);
   useEffect(() => {
-    // Only attempt to redirect if:
+    // Only attempt to fetch data if:
     // 1. The component is hydrated (running in browser)
     // 2. Redux isn't currently fetching a fresh profile (loading: false)
     if (isHydrated && !loading) {
-      if (!token || user?.role !== "admin") {
-        router.push("/login");
-      } else {
+      if (token && user?.role === "admin") {
         // PRE-FETCH DATA: Load all admin data in the background on mount
         // to make switching between pages instant.
         dispatch(fetchDashboardStats());
@@ -122,15 +121,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         dispatch(fetchProjectInquiries());
       }
     }
-  }, [user, token, loading, isHydrated, router, dispatch]);
+  }, [user, token, loading, isHydrated, dispatch]);
 
-  if (!isHydrated || loading || !user || user.role !== "admin") {
+  if (!isHydrated || loading) {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-white">
         <div className="w-6 h-6 border-2 border-[#4a2c2a] border-t-transparent rounded-full animate-spin mb-4" />
         <p className="text-[10px] uppercase tracking-[0.3em] opacity-40">Authenticating...</p>
       </div>
     );
+  }
+
+  if (!token || !user || user.role !== "admin") {
+    return <AdminLogin />;
   }
 
   return (

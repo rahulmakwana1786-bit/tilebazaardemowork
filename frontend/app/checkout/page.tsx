@@ -57,6 +57,17 @@ const getProductPrice = (product: any) => {
   return getFrontendPrice(product);
 };
 
+const checkIsAccessory = (product: any): boolean => {
+  if (!product) return false;
+  const name = (product?.name || "").toUpperCase();
+  const category = (product?.category || "").toUpperCase();
+  const image = (product?.image || "").toUpperCase();
+  return category === "ACCESSORIES" || 
+         name.includes("TRIM") || name.includes("SPACER") || name.includes("WEDGE") || name.includes("MATTING") || name.includes("LEVEL") || name.includes("ADHESIVE") || name.includes("GLUE") ||
+         image.includes("TRIM") || image.includes("SPACER") || image.includes("WEDGE") || image.includes("MATTING") || image.includes("LEVEL") || image.includes("ADHESIVE") || image.includes("GLUE") ||
+         image.includes("/ACCESSORIES/");
+};
+
 export default function CheckoutPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -104,10 +115,8 @@ export default function CheckoutPage() {
 
   const totalWeight = cartItems.reduce((acc, item) => {
     const product = item.product;
-    const name = product?.name?.toUpperCase() || "";
-    const category = product?.category?.toUpperCase() || "";
-    if (name.includes("ADHESIVE") || name.includes("GLUE")) return acc + (item.quantity * 20);
-    if (category === "ACCESSORIES" || name.includes("TRIM") || name.includes("SPACER") || name.includes("WEDGE") || name.includes("MATTING") || name.includes("LEVEL")) return acc + (item.quantity * 1);
+    const isAcc = checkIsAccessory(product);
+    if (isAcc) return acc;
     return acc + (item.quantity * 29);
   }, 0);
 
@@ -162,8 +171,9 @@ export default function CheckoutPage() {
   }, [formData.postcode, totalWeight]);
 
   const subtotalPrice = cartItems.reduce((acc, item) => {
-    // 1 box = 1.44m2
-    return acc + getProductPrice(item.product) * item.quantity * 1.44;
+    const isAcc = checkIsAccessory(item.product);
+    const multiplier = isAcc ? 1 : 1.44;
+    return acc + getProductPrice(item.product) * item.quantity * multiplier;
   }, 0);
 
   const discountAmount = appliedCoupon 
@@ -536,7 +546,7 @@ export default function CheckoutPage() {
                     {cartItems.map((item) => {
                       const product = item.product;
                       if (!product) return null;
-                      const isAcc = product.category?.toLowerCase() === 'accessories';
+                      const isAcc = checkIsAccessory(product);
                       const coverage = isAcc ? item.quantity : item.quantity * 1.44;
                       const price = getProductPrice(product);
 

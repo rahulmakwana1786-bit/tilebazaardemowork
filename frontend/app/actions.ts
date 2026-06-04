@@ -43,27 +43,54 @@ export async function getActiveTilePaths(): Promise<string[]> {
   try {
     // Fetch active products from backend
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tilebazaardemowork-production.up.railway.app';
-    const response = await fetch(`${apiUrl}/api/products`, { next: { revalidate: 0 } });
+    const response = await fetch(`${apiUrl}/api/products`, { cache: 'no-store' });
     
     if (response.ok) {
       const products = await response.json();
       const supabaseImages = products.map((p: any) => p.image);
       const supabaseNames = products.map((p: any) => p.name.toLowerCase());
       
-      // Filter localFiles: keep the file if its basename matches Supabase 'image'
-      // OR if the file's prefix name matches the Supabase product 'name'
-      allFiles = localFiles.filter(localPath => {
+      // Map local files to include name and price from Supabase
+      allFiles = localFiles.map(localPath => {
         const basename = localPath.split('/').pop() || localPath;
-        if (supabaseImages.includes(basename)) return true;
-        
         const baseStr = basename.split('--')[0].replace(/\.[^/.]+$/, "").toLowerCase();
-        if (supabaseNames.includes(baseStr)) return true;
-        
         const cleanStr = baseStr.replace(/[-_]/g, " ").replace(/\s+/g, " ").trim();
-        if (supabaseNames.includes(cleanStr)) return true;
+
+        // Find matching product
+        const matchedProduct = products.find((p: any) => 
+          p.image === basename || 
+          p.name.toLowerCase() === baseStr || 
+          p.name.toLowerCase() === cleanStr
+        );
+
+        if (matchedProduct) {
+           let url = `${localPath}?name=${encodeURIComponent(matchedProduct.name)}&price=${matchedProduct.price}`;
+           if (matchedProduct.discount_price) {
+             url += `&discountPrice=${matchedProduct.discount_price}`;
+           }
+           if (matchedProduct.category) {
+             url += `&category=${encodeURIComponent(matchedProduct.category)}`;
+           }
+           return url;
+        }
+        return null;
+      }).filter(Boolean) as string[];
+
+      // Add any products that have external image URLs (e.g. from Admin upload)
+      const externalImages = products
+        .filter((p: any) => p.image && p.image.startsWith("http"))
+        .map((p: any) => {
+          let url = `${p.image}?size=${p.size || '600x600'}&name=${encodeURIComponent(p.name)}&price=${p.price}`;
+          if (p.discount_price) {
+            url += `&discountPrice=${p.discount_price}`;
+          }
+          if (p.category) {
+            url += `&category=${encodeURIComponent(p.category)}`;
+          }
+          return url;
+        });
         
-        return false;
-      });
+      allFiles = [...allFiles, ...externalImages];
     } else {
       console.warn("Failed to fetch products from backend, falling back to all local files.");
     }

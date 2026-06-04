@@ -112,10 +112,16 @@ export default function TileGallery({ initialImages = [] }: TileGalleryProps) {
 
     const grouped = new Map<string, string[]>();
     baseImages.forEach(img => {
-      const fileName = img.split("/").pop() || img;
+      const fileName = img.split("?")[0].split("/").pop() || img;
       const baseName = formatFileName(fileName).toLowerCase();
-      // Only group by base name and size to ensure we don't accidentally remove a matt version of a completely different size
-      const size = img.split("/").length > 1 ? img.split("/")[0] : "OTHER";
+      
+      let size = "OTHER";
+      if (img.includes("?size=")) {
+        size = img.split("?size=")[1].split("&")[0];
+      } else if (img.split("/").length > 1 && !img.startsWith("http")) {
+        size = img.split("/")[0].split("?")[0];
+      }
+      
       const key = `${baseName}_${size}`;
       
       if (!grouped.has(key)) grouped.set(key, []);
@@ -147,9 +153,20 @@ export default function TileGallery({ initialImages = [] }: TileGalleryProps) {
     const sizes = new Set<string>();
     const finishes = new Set<string>();
     deduplicatedImages.forEach((img) => {
-      const parts = img.split("/");
-      if (parts.length > 1) sizes.add(parts[0]);
-      const finish = getFinish(img.split("/").pop() || img);
+      let size = "OTHER";
+      if (img.includes("?size=")) {
+        size = img.split("?size=")[1].split("&")[0];
+      } else if (img.split("/").length > 1 && !img.startsWith("http")) {
+        size = img.split("/")[0];
+      }
+      size = size.toLowerCase();
+      
+      if (size !== "other") {
+        sizes.add(size);
+      }
+      
+      const fileName = img.split("?")[0].split("/").pop() || img;
+      const finish = getFinish(fileName);
       if (finish !== "OTHER") finishes.add(finish);
     });
     return {
@@ -160,10 +177,17 @@ export default function TileGallery({ initialImages = [] }: TileGalleryProps) {
 
   const filteredTiles = useMemo(() => {
     return deduplicatedImages.filter((img) => {
-      const fileName = img.split("/").pop() || img;
+      const fileName = img.split("?")[0].split("/").pop() || img;
       const finish = getFinish(fileName);
-      const parts = img.split("/");
-      const size = parts.length > 1 ? parts[0] : "OTHER";
+      
+      let size = "OTHER";
+      if (img.includes("?size=")) {
+        size = img.split("?size=")[1].split("&")[0];
+      } else if (img.split("/").length > 1 && !img.startsWith("http")) {
+        size = img.split("/")[0];
+      }
+      size = size.toLowerCase();
+      
       const upperName = fileName.toUpperCase();
       if (sizeFilter === "accessories") {
         let matchesAccessory = true;
@@ -397,16 +421,38 @@ export default function TileGallery({ initialImages = [] }: TileGalleryProps) {
       {/* Product Grid (Matching Screenshot & requested design) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-14">
         {filteredTiles.map((imageName) => {
-          const fileNameOnly = imageName.split("/").pop() || imageName;
+          const imageNameWithoutQuery = imageName.split("?")[0];
+          const fileNameOnly = imageNameWithoutQuery.split("/").pop() || imageNameWithoutQuery;
           const finish = getFinish(fileNameOnly);
           const details = getProductDetails(fileNameOnly);
           const isPoster = fileNameOnly.toUpperCase().includes("POSTER");
+          
+          let displayName = formatFileName(fileNameOnly);
+          let displayPrice = details.price;
+          let displayOriginalPrice = details.price + 5;
+          let category = "";
+          
+          if (imageName.includes("?")) {
+             const params = new URLSearchParams(imageName.split("?")[1]);
+             if (params.has("name")) displayName = params.get("name")!;
+             if (params.has("price")) {
+               const parsedPrice = parseFloat(params.get("price")!);
+               displayOriginalPrice = parsedPrice;
+               displayPrice = parsedPrice;
+             }
+             if (params.has("discountPrice")) {
+               displayPrice = parseFloat(params.get("discountPrice")!);
+             }
+             if (params.has("category")) {
+               category = params.get("category")!;
+             }
+          }
           return (
             <div key={imageName} className="group flex flex-col">
               {/* Boxed Aspect Ratio like the original design */}
               <Link href={`/products/${encodeURIComponent(imageName)}`} className="relative w-full aspect-[5/4] bg-[#fbfbfb] flex items-center justify-center p-6 mb-5 overflow-hidden group/image cursor-pointer">
                 <Image
-                  src={`/tiles/${imageName.split('/').map(s => encodeURIComponent(s)).join('/')}`}
+                  src={imageName.startsWith("http") ? imageNameWithoutQuery : `/tiles/${imageNameWithoutQuery.split('/').map(s => encodeURIComponent(s)).join('/')}`}
                   alt={fileNameOnly}
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
@@ -431,7 +477,7 @@ export default function TileGallery({ initialImages = [] }: TileGalleryProps) {
               <div className="flex flex-col flex-grow text-left px-2">
                 <Link href={`/products/${encodeURIComponent(imageName)}`} className="hover:text-[#4a2c2a]/70 transition-colors">
                   <h3 className="text-[12px] font-bold uppercase mb-3 text-left">
-                    {formatFileName(fileNameOnly)}
+                    {displayName}
                   </h3>
                 </Link>
 
@@ -441,14 +487,14 @@ export default function TileGallery({ initialImages = [] }: TileGalleryProps) {
                   ) : (
                     <>
                       <span className="text-[16px] font-medium text-[#4a2c2a]">
-                        £{details.price.toFixed(2)}{" "}
+                        £{displayPrice.toFixed(2)}{" "}
                         <span className="text-[11px] font-normal text-gray-400">
                           / {details.unit}
                         </span>
                       </span>
-                      {!details.isAccessory && (
+                      {!details.isAccessory && displayOriginalPrice > displayPrice && (
                         <span className="text-[12px] line-through text-gray-300 mb-[2px]">
-                          £{(details.price + 5).toFixed(2)}
+                          £{displayOriginalPrice.toFixed(2)}
                         </span>
                       )}
                     </>
@@ -464,14 +510,15 @@ export default function TileGallery({ initialImages = [] }: TileGalleryProps) {
                       Inquire for Price
                     </Link>
                   ) : (
-                    <AddToCartButton
-                      product={{
-                        id: fileNameOnly,
-                        name: formatFileName(fileNameOnly),
-                        image: `/tiles/${imageName}`,
-                        price: details.price,
-                      }}
-                    />
+                      <AddToCartButton
+                        product={{
+                          id: fileNameOnly,
+                          name: displayName,
+                          image: imageName.startsWith("http") ? imageNameWithoutQuery : `/tiles/${imageNameWithoutQuery}`,
+                          price: displayPrice,
+                          category: category
+                        }}
+                      />
                   )}
                 </div>
               </div>

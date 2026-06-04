@@ -86,7 +86,6 @@ const rightSideVariantsGroup = [
   ["stanza grey", "stanza silver"],
   ["vectro 11013 lt"],
   ["arabescato"],
-  ["gl 2513 decor", "gl 2513 lt"],
 ];
 
 const leftSideVariantsGroup = [
@@ -95,6 +94,7 @@ const leftSideVariantsGroup = [
   ["el glitter aqua"],
   ["gl 2509 decor", "gl 2509 lt"],
   ["gl 2511 decor", "gl 2511 lt"],
+  ["gl 2513 decore", "gl 2513 lt"],
   ["gl 2514 decore", "gl 2514 lt"],
   ["emparador brown"],
   ["irish red mp 1", "levanto black 3 mo 1"],
@@ -349,8 +349,17 @@ export default function ProductDetailPage({
   const resolvedParams = use(params);
   // slug is the URL-encoded relative tile path, e.g. "600x600%2FALEXA+BEIGE_R1--GLOSS.jpg"
   const imagePath = decodeURIComponent(resolvedParams.slug); // e.g. "600x600/ALEXA BEIGE_R1--GLOSS.jpg"
-  const fileNameOnly = imagePath.split("/").pop() || imagePath;
-  const dimension = imagePath.split("/")[0] || "N/A"; // folder = dimension, e.g. "600x600"
+  
+  const imagePathWithoutQuery = imagePath.split("?")[0];
+  const fileNameOnly = imagePathWithoutQuery.split("/").pop() || imagePathWithoutQuery;
+  
+  let dimension = "N/A";
+  if (imagePath.includes("?size=")) {
+    dimension = imagePath.split("?size=")[1].split("&")[0];
+  } else if (!imagePath.startsWith("http")) {
+    dimension = imagePath.split("/")[0].split("?")[0] || "N/A";
+  }
+  dimension = dimension.toUpperCase();
 
   const [selectedAurlImage, setSelectedAurlImage] = useState<string | null>(null);
   const [selectedPaveImage, setSelectedPaveImage] = useState<string | null>(null);
@@ -367,9 +376,26 @@ export default function ProductDetailPage({
 
   const finish = getFinish(fileNameOnly);
   const details = getProductDetails(fileNameOnly);
-  const category = getCategory(fileNameOnly);
-  const displayName = formatFileName(fileNameOnly);
+  let category = getCategory(fileNameOnly);
+  let displayName = formatFileName(fileNameOnly);
   const isPoster = fileNameOnly.toUpperCase().includes("POSTER");
+  
+  let displayOriginalPrice = details.price + 5;
+  if (imagePath.includes("?")) {
+     const params = new URLSearchParams(imagePath.split("?")[1]);
+     if (params.has("name")) displayName = params.get("name")!;
+     if (params.has("price")) {
+       const parsedPrice = parseFloat(params.get("price")!);
+       displayOriginalPrice = parsedPrice;
+       details.price = parsedPrice; // fallback if no discount
+     }
+     if (params.has("discountPrice")) {
+       details.price = parseFloat(params.get("discountPrice")!);
+     }
+     if (params.has("category")) {
+       category = params.get("category")!;
+     }
+  }
 
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -412,8 +438,16 @@ export default function ProductDetailPage({
     for (const itemName of group) {
       // Filter candidates to ensure they belong to the same dimension folder
       const candidates = allTiles.filter((t) => {
-        const tDimension = t.split("/")[0];
-        const tName = t.split("/").pop() || t;
+        let tDimension = "N/A";
+        if (t.includes("?size=")) {
+          tDimension = t.split("?size=")[1];
+        } else if (!t.startsWith("http")) {
+          tDimension = t.split("/")[0];
+        }
+        
+        const tNameWithoutQuery = t.split("?")[0];
+        const tName = tNameWithoutQuery.split("/").pop() || tNameWithoutQuery;
+        
         return tDimension === currentDimension && getVariantMatchName(tName).toLowerCase() === itemName;
       });
 
@@ -421,7 +455,8 @@ export default function ProductDetailPage({
         let best = candidates[0];
         if (currentSuffix) {
           const matched = candidates.find((c) => {
-            const cName = c.split("/").pop() || c;
+            const cNameWithoutQuery = c.split("?")[0];
+            const cName = cNameWithoutQuery.split("/").pop() || cNameWithoutQuery;
             const cSuffix = getFileNameSuffix(cName).toLowerCase();
             return cSuffix === currentSuffix;
           });
@@ -431,7 +466,8 @@ export default function ProductDetailPage({
             const partial = currentSuffix.replace(/_1$/, "");
             if (partial) {
               const matchedPartial = candidates.find((c) => {
-                const cName = c.split("/").pop() || c;
+                const cNameWithoutQuery = c.split("?")[0];
+                const cName = cNameWithoutQuery.split("/").pop() || cNameWithoutQuery;
                 const cSuffix = getFileNameSuffix(cName).toLowerCase();
                 return cSuffix.includes(partial);
               });
@@ -477,9 +513,10 @@ export default function ProductDetailPage({
           id: fileNameOnly,
           name: displayName,
           price: details.price,
-          image: `/tiles/${displayImagePath}`,
-          size: dimension,
-          slug: fileNameOnly,
+          image: imagePath.startsWith("http") ? imagePathWithoutQuery : `/tiles/${imagePathWithoutQuery}`,
+          size: dimension || "600x1200",
+          category: category,
+          slug: fileNameOnly
         },
       }),
     );
@@ -575,7 +612,7 @@ export default function ProductDetailPage({
             <div className="relative w-full aspect-square bg-transparent rounded-sm overflow-hidden flex items-center justify-center p-6 md:p-10 transition-all duration-300">
               {!imgError ? (
                 <img
-                  src={`/tiles/${displayImagePath.split('/').map(s => encodeURIComponent(s)).join('/')}`}
+                  src={displayImagePath.startsWith("http") ? displayImagePath.split("?")[0] : `/tiles/${displayImagePath.split("?")[0].split('/').map(s => encodeURIComponent(s)).join('/')}`}
                   alt={displayName}
                   className="w-full h-full object-contain "
                   onError={() => setImgError(true)}
@@ -602,7 +639,7 @@ export default function ProductDetailPage({
               <div className="mt-4 flex gap-3">
                 <div className="w-20 h-20 bg-transparent border-2 border-[#4a2c2a] rounded-sm overflow-hidden flex items-center justify-center p-1 flex-shrink-0">
                   <img
-                    src={`/tiles/${displayImagePath}`}
+                    src={displayImagePath.startsWith("http") ? displayImagePath.split("?")[0] : `/tiles/${displayImagePath.split("?")[0]}`}
                     alt="thumb"
                     className="w-full h-full object-contain "
                   />
@@ -664,7 +701,8 @@ export default function ProductDetailPage({
                 <div className="flex flex-wrap justify-start gap-5">
                   {variantPaths.map((path) => {
                     const isActive = path === imagePath;
-                    const vName = formatFileName(path.split("/").pop() || path);
+                    const vNameWithoutQuery = path.split("?")[0];
+                    const vName = formatFileName(vNameWithoutQuery.split("/").pop() || vNameWithoutQuery);
                     return (
                       <Link
                         key={path}
@@ -675,7 +713,7 @@ export default function ProductDetailPage({
                           className={`relative w-36 h-24 md:w-40 md:h-28 bg-transparent border-[3px] ${isActive ? "border-black" : "border-transparent"} hover:border-black/40 transition-colors overflow-hidden`}
                         >
                           <img
-                            src={`/tiles/${path}`}
+                            src={path.startsWith("http") ? path.split("?")[0] : `/tiles/${path.split("?")[0]}`}
                             alt={vName}
                             
                             className="w-full h-full object-cover  p-1"
@@ -1289,6 +1327,11 @@ export default function ProductDetailPage({
                       <span className="text-4xl font-bold text-[#4a2c2a]">
                         £{details.price.toFixed(2)}
                       </span>
+                      {displayOriginalPrice > details.price && (
+                        <span className="text-xl line-through text-gray-300">
+                          £{displayOriginalPrice.toFixed(2)}
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1362,18 +1405,22 @@ export default function ProductDetailPage({
                     <span className="text-4xl font-bold text-[#4a2c2a]">
                       £{details.price.toFixed(2)}
                     </span>
-                    <span className="text-xl line-through text-gray-300">
-                      £{(details.price + 5).toFixed(2)}
-                    </span>
+                    {displayOriginalPrice > details.price && (
+                      <span className="text-xl line-through text-gray-300">
+                        £{displayOriginalPrice.toFixed(2)}
+                      </span>
+                    )}
                     <span className="text-[11px] text-gray-400 font-medium">
                       / m²
                     </span>
                   </div>
-                  <div className="mt-2 inline-flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 px-3 py-1 rounded-full">
-                    <span className="text-[10px] font-bold uppercase tracking-wider">
-                      Save £{(5).toFixed(2)}
-                    </span>
-                  </div>
+                  {displayOriginalPrice > details.price && (
+                    <div className="mt-2 inline-flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 px-3 py-1 rounded-full">
+                      <span className="text-[10px] font-bold uppercase tracking-wider">
+                        Save £{(displayOriginalPrice - details.price).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <TilePackCalculator
@@ -1381,7 +1428,7 @@ export default function ProductDetailPage({
                   productName={displayName}
                   pricePerM2={details.price}
                   size={dimension}
-                  image={`/tiles/${displayImagePath}`}
+                  image={displayImagePath.startsWith("http") ? displayImagePath.split("?")[0] : `/tiles/${displayImagePath.split("?")[0]}`}
                   token={token}
                   router={router}
                 />

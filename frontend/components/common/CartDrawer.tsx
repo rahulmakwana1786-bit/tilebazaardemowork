@@ -182,6 +182,19 @@ const getProductPrice = (product: any) => {
   return getFrontendPrice(product);
 };
 
+const checkIsAccessory = (product: any): boolean => {
+  if (!product) return false;
+  const name = (product?.name || "").toUpperCase();
+  const category = (product?.category || "").toUpperCase();
+  const image = (product?.image || "").toUpperCase();
+  const id = (product?.id || "").toUpperCase();
+  return category === "ACCESSORIES" || 
+         name.includes("TRIM") || name.includes("SPACER") || name.includes("WEDGE") || name.includes("MATTING") || name.includes("LEVEL") || name.includes("ADHESIVE") || name.includes("GLUE") ||
+         image.includes("TRIM") || image.includes("SPACER") || image.includes("WEDGE") || image.includes("MATTING") || image.includes("LEVEL") || image.includes("ADHESIVE") || image.includes("GLUE") ||
+         id.includes("TRIM") || id.includes("SPACER") || id.includes("WEDGE") || id.includes("MATTING") || id.includes("LEVEL") || id.includes("ADHESIVE") || id.includes("GLUE") ||
+         image.includes("/ACCESSORIES/");
+};
+
 export default function CartDrawer({
   isOpen,
   onClose,
@@ -199,25 +212,21 @@ export default function CartDrawer({
   // 2. MANUAL CALCULATIONS
   const totalCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
   const totalPrice = cartItems.reduce((acc, item) => {
+    const isAcc = checkIsAccessory(item.product);
+    const multiplier = isAcc ? 1 : 1.44;
     return (
       acc +
-      getProductPrice(item.product) * item.quantity * 1.44
+      getProductPrice(item.product) * item.quantity * multiplier
     );
   }, 0);
 
   const totalWeight = cartItems.reduce((acc, item) => {
     const product = item.product;
-    const name = product?.name?.toUpperCase() || "";
-    const category = product?.category?.toUpperCase() || "";
+    const isAcc = checkIsAccessory(product);
     
-    // Check if it's an adhesive (typically 20kg per bag)
-    if (name.includes("ADHESIVE") || name.includes("GLUE")) {
-      return acc + (item.quantity * 20);
-    }
-    
-    // Check if it's an accessory (typically 1kg per piece/bag)
-    if (category === "ACCESSORIES" || name.includes("TRIM") || name.includes("SPACER") || name.includes("WEDGE") || name.includes("MATTING") || name.includes("LEVEL")) {
-      return acc + (item.quantity * 1);
+    // Accessories have 0 weight as requested
+    if (isAcc) {
+      return acc;
     }
     
     // Standard tile box weight (assume 1.44m2 box weighs 29kg)
@@ -374,9 +383,11 @@ export default function CartDrawer({
 
                     <p className="text-[11px] text-[#4a2c2a] mt-1 tracking-tighter">
                       <span className="text-[12px] font-bold">
-                        £{getProductPrice(product).toFixed(2)} /m²{" "}
+                        £{getProductPrice(product).toFixed(2)} {checkIsAccessory(product) ? "" : "/m²"}
                       </span>
-                      • {product.size} • {(item.quantity * 1.44).toFixed(2)} SQM ({item.quantity} boxes)
+                      {checkIsAccessory(product) 
+                        ? "" 
+                        : ` • ${product.size || "600x1200"} • ${(item.quantity * 1.44).toFixed(2)} SQM (${item.quantity} boxes)`}
                     </p>
 
                     <div className="flex items-center justify-between mt-auto pt-4">
@@ -405,7 +416,8 @@ export default function CartDrawer({
                         £
                         {(
                           getProductPrice(product) *
-                          item.quantity * 1.44
+                          item.quantity *
+                          (checkIsAccessory(product) ? 1 : 1.44)
                         ).toFixed(2)}
                       </p>
                     </div>
