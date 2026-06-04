@@ -94,7 +94,9 @@
 import nodemailer from 'nodemailer';
 
 export const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // true for 465, false for other ports
   auth: {
     type: 'OAuth2',
     user: process.env.MAIL_USER, // Your gmail address
@@ -102,4 +104,7 @@ export const transporter = nodemailer.createTransport({
     clientSecret: process.env.OAUTH_CLIENT_SECRET,
     refreshToken: process.env.OAUTH_REFRESH_TOKEN,
   },
+  tls: {
+    rejectUnauthorized: false
+  }
 });
