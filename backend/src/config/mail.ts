@@ -1,256 +1,58 @@
-// // import nodemailer from 'nodemailer';
-// // import dotenv from 'dotenv';
+import { Resend } from 'resend';
 
-// // dotenv.config();
+// Initialize Resend with the API key from environment variables
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// // export const transporter = nodemailer.createTransport({
-// //   host: 'smtp.gmail.com',
-// //   port: 465,
-// //   secure: true, // Use SSL
-// //   pool:true,
-// //   auth: {
-// //     user: process.env.MAIL_USER,
-// //     pass: process.env.MAIL_PASS,
-// //   },
-// //   tls: {
-// //     servername: "smtp.gmail.com", // Explicitly set servername for SNI
-// //     rejectUnauthorized: false,
-// //   },
-// //   // Increase timeouts significantly for cloud-to-cloud latency
-// //   connectionTimeout: 30000, // 30 seconds
-// //   greetingTimeout: 30000,
-// //   socketTimeout: 30000,
-// // });
+/**
+ * A general purpose sendMail utility to maintain backward compatibility
+ * with older code that used nodemailer's transporter.sendMail.
+ */
+export const transporter = {
+  sendMail: async (options: { from?: string, to: string, subject: string, html: string, bcc?: string }) => {
+    try {
+      // For Resend, if a custom domain isn't verified, you must use onboarding@resend.dev
+      const from = process.env.RESEND_FROM_EMAIL || 'TileBazaar <onboarding@resend.dev>';
+      
+      const response = await resend.emails.send({
+        from,
+        to: [options.to],
+        bcc: options.bcc ? [options.bcc] : undefined,
+        subject: options.subject,
+        html: options.html,
+      });
 
-// // // Verify the connection
-// // transporter.verify((error, success) => {
-// //   if (error) {
-// //     console.error('❌ Gmail Connection Error:', error);
-// //   } else {
-// //     console.log('📧 Gmail is ready to send reset links');
-// //   }
-// // });
+      if (response.error) {
+        console.error("Resend API Error:", response.error);
+        throw new Error(`Resend Error: ${response.error.message}`);
+      }
 
+      console.log("✅ Email sent successfully via Resend!");
+      return response.data;
+    } catch (err: any) {
+      console.error("❌ Transporter Error:", err);
+      throw err;
+    }
+  }
+};
 
-// // import nodemailer from 'nodemailer';
-
-// // // Configuration for Port 465 (SSL)
-// // const sslConfig = {
-// //   host: 'smtp.gmail.com',
-// //   port: 465,
-// //   secure: true,
-// //   pool: true,
-// //   auth: {
-// //     user: process.env.MAIL_USER,
-// //     pass: process.env.MAIL_PASS,
-// //   },
-// //   tls: {
-// //     servername: "smtp.gmail.com",
-// //     rejectUnauthorized: false,
-// //   },
-// //   connectionTimeout: 15000, 
-// // };
-
-// // // Configuration for Port 587 (TLS)
-// // const tlsConfig = {
-// //   host: 'smtp.gmail.com',
-// //   port: 587,
-// //   secure: false, // Must be false for 587
-// //   auth: {
-// //     user: process.env.MAIL_USER,
-// //     pass: process.env.MAIL_PASS,
-// //   },
-// //   tls: {
-// //     ciphers: 'SSLv3',
-// //     rejectUnauthorized: false,
-// //   },
-// //   connectionTimeout: 15000,
-// // };
-
-// // export const transporter = nodemailer.createTransport(sslConfig);
-
-// // // Improved Verification with Fallback
-// // export const verifyConnection = async () => {
-// //   try {
-// //     console.log("Attempting Gmail Connection (Port 465)...");
-// //     await transporter.verify();
-// //     console.log('✅ Gmail ready on Port 465');
-// //   } catch (err) {
-// //     console.warn('⚠️ Port 465 timed out, switching to Port 587...');
-// //     const fallbackTransporter = nodemailer.createTransport(tlsConfig);
-// //     try {
-// //       await fallbackTransporter.verify();
-// //       // Replace the exported transporter with the working one
-// //       Object.assign(transporter, fallbackTransporter);
-// //       console.log('✅ Gmail ready on Port 587');
-// //     } catch (fallbackErr) {
-// //       console.error('❌ All Gmail ports are being blocked by the network.');
-// //     }
-// //   }
-// // };
-
-// // verifyConnection();
-
-// import nodemailer from 'nodemailer';
-
-
-// export const transporter = nodemailer.createTransport({
+/**
+ * A reusable utility specifically for sending OTP emails.
+ */
+export const sendOTPEmail = async (toEmail: string, fullName: string, otpCode: string, type: 'login' | 'register') => {
+  const subject = type === 'login' ? 'Your TileBazaar Login Code' : 'Verify Your TileBazaar Account';
+  const heading = type === 'login' ? `Hello, ${fullName}!` : `Welcome to TileBazaar, ${fullName}!`;
   
-//   host: 'smtp.gmail.com',
-//   port: 587,
-//   secure: false, // true for 465, false for other ports
-//   auth: {
-//     type: 'OAuth2',
-//     user: process.env.MAIL_USER, // Your gmail address
-//     clientId: process.env.OAUTH_CLIENT_ID,
-//     clientSecret: process.env.OAUTH_CLIENT_SECRET,
-//     refreshToken: process.env.OAUTH_REFRESH_TOKEN,
-//   },
-//   tls: {
-//     rejectUnauthorized: false
-//   }
-// });
+  const html = `
+    <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd;">
+      <h2>${heading}</h2>
+      <p>Your one-time code is: <strong>${otpCode}</strong></p>
+      <p>This code will expire in 5 minutes.</p>
+    </div>
+  `;
 
-// import nodemailer from 'nodemailer';
-// import dotenv from 'dotenv';
-
-// dotenv.config();
-
-// export const transporter = nodemailer.createTransport({
-//   host: 'smtp.gmail.com',
-//   port: 465,
-//   secure: true, // Use SSL
-//   pool:true,
-//   auth: {
-//     user: process.env.MAIL_USER,
-//     pass: process.env.MAIL_PASS,
-//   },
-//   tls: {
-//     servername: "smtp.gmail.com", // Explicitly set servername for SNI
-//     rejectUnauthorized: false,
-//   },
-//   // Increase timeouts significantly for cloud-to-cloud latency
-//   connectionTimeout: 30000, // 30 seconds
-//   greetingTimeout: 30000,
-//   socketTimeout: 30000,
-// });
-
-// // Verify the connection
-// transporter.verify((error, success) => {
-//   if (error) {
-//     console.error('❌ Gmail Connection Error:', error);
-//   } else {
-//     console.log('📧 Gmail is ready to send reset links');
-//   }
-// });
-
-
-// import nodemailer from 'nodemailer';
-
-// // Configuration for Port 465 (SSL)
-// const sslConfig = {
-//   host: 'smtp.gmail.com',
-//   port: 465,
-//   secure: true,
-//   pool: true,
-//   auth: {
-//     user: process.env.MAIL_USER,
-//     pass: process.env.MAIL_PASS,
-//   },
-//   tls: {
-//     servername: "smtp.gmail.com",
-//     rejectUnauthorized: false,
-//   },
-//   connectionTimeout: 15000, 
-// };
-
-// // Configuration for Port 587 (TLS)
-// const tlsConfig = {
-//   host: 'smtp.gmail.com',
-//   port: 587,
-//   secure: false, // Must be false for 587
-//   auth: {
-//     user: process.env.MAIL_USER,
-//     pass: process.env.MAIL_PASS,
-//   },
-//   tls: {
-//     ciphers: 'SSLv3',
-//     rejectUnauthorized: false,
-//   },
-//   connectionTimeout: 15000,
-// };
-
-// export const transporter = nodemailer.createTransport(sslConfig);
-
-// // Improved Verification with Fallback
-// export const verifyConnection = async () => {
-//   try {
-//     console.log("Attempting Gmail Connection (Port 465)...");
-//     await transporter.verify();
-//     console.log('✅ Gmail ready on Port 465');
-//   } catch (err) {
-//     console.warn('⚠️ Port 465 timed out, switching to Port 587...');
-//     const fallbackTransporter = nodemailer.createTransport(tlsConfig);
-//     try {
-//       await fallbackTransporter.verify();
-//       // Replace the exported transporter with the working one
-//       Object.assign(transporter, fallbackTransporter);
-//       console.log('✅ Gmail ready on Port 587');
-//     } catch (fallbackErr) {
-//       console.error('❌ All Gmail ports are being blocked by the network.');
-//     }
-//   }
-// };
-
-// verifyConnection();
-
-import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-export const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
-  },
-});
-
-// Verify connection on startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('❌ Gmail Connection Error:', error);
-  } else {
-    console.log('✅ Gmail is ready to send emails');
-  }
-});
-
-export const sendOTPEmail = async (
-  email: string,
-  otp: string
-): Promise<boolean> => {
-  try {
-    const mailOptions = {
-      from: process.env.MAIL_USER,
-      to: email,
-      subject: 'Your Login OTP',
-      html: `
-        <div style="font-family: Arial, sans-serif;">
-          <h2>Tile Bazaar Login Verification</h2>
-          <p>Your OTP is:</p>
-          <h1 style="letter-spacing:5px;">${otp}</h1>
-          <p>This OTP is valid for 10 minutes.</p>
-        </div>
-      `,
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-
-    console.log('✅ OTP Email Sent:', info.messageId);
-    return true;
-  } catch (error) {
-    console.error('❌ Failed to send OTP email:', error);
-    return false;
-  }
+  return transporter.sendMail({
+    to: toEmail,
+    subject,
+    html
+  });
 };

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import { supabase } from '../config/supabase.js';
-import { transporter } from '../config/mail.js';
+import { transporter, sendOTPEmail } from '../config/mail.js';
 import crypto from 'crypto';
 import { otpStore } from './otpController.js';
 
@@ -48,19 +48,8 @@ export const googleLogin = async (req: Request, res: Response) => {
 
     otpStore.set(user.email, { code: otpCode, expires, type: 'login' });
 
-    // Send OTP Email
-    transporter.sendMail({
-      from: `"TileBazaar Security" <${process.env.MAIL_USER}>`,
-      to: user.email,
-      subject: 'Your TileBazaar Login Code',
-      html: `
-        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd;">
-          <h2>Hello, ${user.full_name}!</h2>
-          <p>Your one-time login code is: <strong>${otpCode}</strong></p>
-          <p>This code will expire in 5 minutes.</p>
-        </div>
-      `
-    }).catch(mailError => console.error("Failed to send OTP email:", mailError));
+    // Send OTP Email using Resend
+    await sendOTPEmail(user.email, user.full_name, otpCode, 'login');
 
     res.status(200).json({
       status: 'OTP_REQUIRED',
@@ -132,19 +121,8 @@ export const googleRegister = async (req: Request, res: Response) => {
       registrationData 
     });
 
-    // Send OTP Email
-    transporter.sendMail({
-      from: `"TileBazaar Security" <${process.env.MAIL_USER}>`,
-      to: email,
-      subject: 'Verify Your TileBazaar Account',
-      html: `
-        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd;">
-          <h2>Welcome to TileBazaar, ${full_name || 'Google User'}!</h2>
-          <p>Your account verification code is: <strong>${otpCode}</strong></p>
-          <p>This code will expire in 5 minutes.</p>
-        </div>
-      `
-    }).catch(mailError => console.error("Failed to send verification email:", mailError));
+    // Send OTP Email using Resend
+    await sendOTPEmail(email, full_name || 'Google User', otpCode, 'register');
 
     res.status(200).json({
       status: 'OTP_REQUIRED',
