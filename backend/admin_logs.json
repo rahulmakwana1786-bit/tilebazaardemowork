@@ -1,5 +1,59 @@
 [
   {
+    "id": "ij5svwltb",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "UPDATE_PRODUCT",
+    "details": "Updated product: Rahul Makwana (ID: d9f4414c-784f-4577-a1b2-7984f7d7c963)",
+    "page": "/admin/products",
+    "created_at": "2026-06-04T04:33:03.188Z"
+  },
+  {
+    "id": "q55mwa1j3",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "UPDATE_PRODUCT",
+    "details": "Updated product: Rahul Makwana (ID: d9f4414c-784f-4577-a1b2-7984f7d7c963)",
+    "page": "/admin/products",
+    "created_at": "2026-06-04T04:33:01.763Z"
+  },
+  {
+    "id": "o7ec6xjyv",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "LOGOUT",
+    "details": "Logged out of the system",
+    "page": "/admin",
+    "created_at": "2026-06-04T04:26:52.716Z"
+  },
+  {
+    "id": "uh5huln4q",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "UPDATE_PRODUCT",
+    "details": "Updated product: Rahul Makwana (ID: d9f4414c-784f-4577-a1b2-7984f7d7c963)",
+    "page": "/admin/products",
+    "created_at": "2026-06-04T04:26:25.539Z"
+  },
+  {
+    "id": "auarx17av",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "ADD_PRODUCT",
+    "details": "Registered product: Rahul Makwana (ID: d9f4414c-784f-4577-a1b2-7984f7d7c963)",
+    "page": "/admin/products",
+    "created_at": "2026-06-04T04:26:16.296Z"
+  },
+  {
+    "id": "3fzirdi1g",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "LOGIN",
+    "details": "Admin logged in successfully",
+    "page": "/admin",
+    "created_at": "2026-06-04T04:24:59.337Z"
+  },
+  {
     "id": "rr6zw945u",
     "admin_email": "admin2@tilebazaar.co.uk",
     "admin_name": "David Thompson",

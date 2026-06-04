@@ -69,7 +69,7 @@ export const fetchCart = createAsyncThunk<
 // 2. Add/Update Item
 export const addToCartAsync = createAsyncThunk<
   void,
-  { product_id: string; quantity: number },
+  { product_id: string; quantity: number; unit?: string },
   { rejectValue: string }
 >(
   "cart/addToCart",

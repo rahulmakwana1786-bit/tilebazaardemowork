@@ -86,6 +86,7 @@ const rightSideVariantsGroup = [
   ["stanza grey", "stanza silver"],
   ["vectro 11013 lt"],
   ["arabescato"],
+  ["gl 2513 decor", "gl 2513 lt"],
 ];
 
 const leftSideVariantsGroup = [
@@ -94,7 +95,6 @@ const leftSideVariantsGroup = [
   ["el glitter aqua"],
   ["gl 2509 decor", "gl 2509 lt"],
   ["gl 2511 decor", "gl 2511 lt"],
-  ["gl 2513 decor", "gl 2513 lt"],
   ["gl 2514 decore", "gl 2514 lt"],
   ["emparador brown"],
   ["irish red mp 1", "levanto black 3 mo 1"],
@@ -472,7 +472,7 @@ export default function ProductDetailPage({
         user_id: "preview_user",
         product_id: fileNameOnly,
         quantity: 1,
-        unit: "boxes",
+        unit: "pieces",
         product: {
           id: fileNameOnly,
           name: displayName,
@@ -493,7 +493,7 @@ export default function ProductDetailPage({
     try {
       setIsAdding(true);
       await dispatch(
-        addToCartAsync({ product_id: fileNameOnly, quantity: 1 }),
+        addToCartAsync({ product_id: fileNameOnly, quantity: 1, unit: "pieces" }),
       ).unwrap();
       setIsSuccess(true);
       setCartOpen(true);
