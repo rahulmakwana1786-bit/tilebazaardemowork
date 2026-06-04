@@ -8,18 +8,30 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  * with older code that used nodemailer's transporter.sendMail.
  */
 export const transporter = {
-  sendMail: async (options: { from?: string, to: string, subject: string, html: string, bcc?: string }) => {
+  sendMail: async (options: { from?: string, to?: string | string[], subject: string, html: string, bcc?: string | string[] }) => {
     try {
-      // For Resend, if a custom domain isn't verified, you must use onboarding@resend.dev
+      // If a custom domain isn't verified in Resend, you must use onboarding@resend.dev
       const from = process.env.RESEND_FROM_EMAIL || 'TileBazaar <onboarding@resend.dev>';
       
-      const response = await resend.emails.send({
+      const payload: any = {
         from,
-        to: [options.to],
-        bcc: options.bcc ? [options.bcc] : undefined,
         subject: options.subject,
         html: options.html,
-      });
+      };
+
+      if (options.to) {
+        payload.to = Array.isArray(options.to) ? options.to : [options.to];
+      } else {
+        // Resend requires at least a 'to' or 'bcc'. If only bcc is provided, we might need a dummy 'to', but we'll try passing just bcc.
+        // Actually, Resend documentation says 'to' is required. Let's provide a default if missing.
+        payload.to = ['onboarding@resend.dev'];
+      }
+
+      if (options.bcc) {
+        payload.bcc = Array.isArray(options.bcc) ? options.bcc : [options.bcc];
+      }
+      
+      const response = await resend.emails.send(payload);
 
       if (response.error) {
         console.error("Resend API Error:", response.error);

@@ -73,7 +73,7 @@ export const createProduct = async (req: Request, res: Response) => {
       
       if (users && users.length > 0) {
         const productUrl = `${process.env.FRONTEND_URL}/products/${finalSlug}`;
-        const emails = users.map((u: any) => u.email).filter(Boolean);
+        const emails: string[] = users.map((u: any) => u.email as string).filter(Boolean);
         
         // Send emails
         await transporter.sendMail({
