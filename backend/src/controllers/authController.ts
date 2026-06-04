@@ -68,7 +68,7 @@ export const register = async (req: Request, res: Response) => {
     });
 
     // Send OTP Email
-    transporter.sendMail({
+    await transporter.sendMail({
       from: `"TileBazaar Security" <${process.env.MAIL_USER}>`,
       to: email,
       subject: 'Verify Your TileBazaar Account',
@@ -79,7 +79,7 @@ export const register = async (req: Request, res: Response) => {
           <p>This code will expire in 5 minutes.</p>
         </div>
       `
-    }).catch(mailError => console.error("Failed to send verification email:", mailError));
+    });
 
     res.status(200).json({
       status: 'OTP_REQUIRED',
@@ -188,7 +188,7 @@ export const login = async (req: Request, res: Response) => {
     otpStore.set(user.email, { code: otpCode, expires, type: 'login' });
 
     // Send OTP Email
-    transporter.sendMail({
+    await transporter.sendMail({
       from: `"TileBazaar Security" <${process.env.MAIL_USER}>`,
       to: user.email,
       subject: 'Your TileBazaar Login Code',
@@ -199,7 +199,7 @@ export const login = async (req: Request, res: Response) => {
           <p>This code will expire in 5 minutes.</p>
         </div>
       `
-    }).catch(mailError => console.error("Failed to send OTP email:", mailError));
+    });
 
     res.status(200).json({
       status: 'OTP_REQUIRED',
