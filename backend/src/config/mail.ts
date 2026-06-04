@@ -205,21 +205,52 @@
 // verifyConnection();
 
 import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
 
+dotenv.config();
 
 export const transporter = nodemailer.createTransport({
-  
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // true for 465, false for other ports
+  service: 'gmail',
   auth: {
-    type: 'OAuth2',
-    user: process.env.MAIL_USER, // Your gmail address
-    clientId: process.env.OAUTH_CLIENT_ID,
-    clientSecret: process.env.OAUTH_CLIENT_SECRET,
-    refreshToken: process.env.OAUTH_REFRESH_TOKEN,
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
   },
-  tls: {
-    rejectUnauthorized: false
+});
+
+// Verify connection on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('❌ Gmail Connection Error:', error);
+  } else {
+    console.log('✅ Gmail is ready to send emails');
   }
 });
+
+export const sendOTPEmail = async (
+  email: string,
+  otp: string
+): Promise<boolean> => {
+  try {
+    const mailOptions = {
+      from: process.env.MAIL_USER,
+      to: email,
+      subject: 'Your Login OTP',
+      html: `
+        <div style="font-family: Arial, sans-serif;">
+          <h2>Tile Bazaar Login Verification</h2>
+          <p>Your OTP is:</p>
+          <h1 style="letter-spacing:5px;">${otp}</h1>
+          <p>This OTP is valid for 10 minutes.</p>
+        </div>
+      `,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log('✅ OTP Email Sent:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to send OTP email:', error);
+    return false;
+  }
+};
