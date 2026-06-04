@@ -1,7 +1,8 @@
 import { Resend } from 'resend';
 
-// Initialize Resend with the API key from environment variables
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend with the API key from environment variables.
+// We use a dummy key fallback so the server doesn't instantly crash on startup if the variable is missing on Railway.
+const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key_to_prevent_crash');
 
 /**
  * A general purpose sendMail utility to maintain backward compatibility
@@ -10,6 +11,12 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export const transporter = {
   sendMail: async (options: { from?: string, to?: string | string[], subject: string, html: string, bcc?: string | string[] }) => {
     try {
+      // 1. Fail Gracefully if API Key is missing
+      if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_dummy_key_to_prevent_crash') {
+        console.warn("⚠️ Email Sending Skipped: RESEND_API_KEY is missing in environment variables.");
+        return null; // Return gracefully so the app continues to function (e.g. login proceeds without email)
+      }
+
       // If a custom domain isn't verified in Resend, you must use onboarding@resend.dev
       const from = process.env.RESEND_FROM_EMAIL || 'TileBazaar <onboarding@resend.dev>';
       
