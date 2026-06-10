@@ -302,10 +302,6 @@ export default function CheckoutPage() {
           <p className="text-gray-600 mb-8 leading-relaxed text-sm">
             Your mail id is saved , the payment link will be share to the registered mail id within 3 days
           </p>
-          <div className="bg-[#fbfbfb] p-6 mb-8 text-left border border-gray-50">
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Order Reference</p>
-            <p className="text-lg font-bold text-[#4a2c2a]">#TB-{createdLocalOrderId || Math.floor(Math.random() * 1000000)}</p>
-          </div>
           <Link
             href="/products"
             className="inline-block bg-[#4a2c2a] text-white px-10 py-4 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-black transition-colors"

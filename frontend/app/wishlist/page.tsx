@@ -123,18 +123,18 @@ export default function WishlistPage() {
   // Add item to cart
   const handleAddToCart = async (product: WishlistProduct) => {
     if (!token) {
-      performMockAdd(product.slug, getProductDetails(product.slug));
+      performMockAdd(product.id, getProductDetails(product.id));
       setCartOpen(true);
       return;
     }
     try {
-      setAddingId(product.slug);
+      setAddingId(product.id);
       await dispatch(
-        addToCartAsync({ product_id: product.slug, quantity: 1 })
+        addToCartAsync({ product_id: product.id, quantity: 1 })
       ).unwrap();
       setCartOpen(true);
     } catch (err) {
-      performMockAdd(product.slug, getProductDetails(product.slug));
+      performMockAdd(product.id, getProductDetails(product.id));
       setCartOpen(true);
     } finally {
       setAddingId(null);
@@ -148,8 +148,6 @@ export default function WishlistPage() {
       // Find matching path
       const fullPath = allTiles.find((t) => (t.split("/").pop() || t) === slug);
       if (!fullPath) return null;
-      
-      if (!fullPath) return null;
 
       const fileNameOnly = slug;
       const details = getProductDetails(fileNameOnly);
@@ -157,7 +155,7 @@ export default function WishlistPage() {
       return {
         id: fileNameOnly,
         name: formatFileName(fileNameOnly),
-        slug: fileNameOnly,
+        slug: fullPath,
         image: `/tiles/${fullPath}`,
         price: details.price,
         discount_price: details.isAccessory ? 0 : details.price + 5,
@@ -217,14 +215,14 @@ export default function WishlistPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-14">
               {wishlistedProducts.map((product) => {
                 const imagePath = product.image;
-                const isPoster = product.slug.toUpperCase().includes("POSTER");
+                const isPoster = product.id.toUpperCase().includes("POSTER");
                 const price = product.price;
 
                 return (
                   <div key={product.id} className="group flex flex-col relative">
                     {/* Remove Wishlist Button in Corner */}
                     <button
-                      onClick={() => handleRemove(product.slug)}
+                      onClick={() => handleRemove(product.id)}
                       className="absolute top-4 right-4 z-30 bg-white/80 backdrop-blur-md p-2.5 rounded-full text-gray-400 hover:text-red-500 shadow-md hover:scale-105 active:scale-95 transition-all"
                       title="Remove from wishlist"
                     >
@@ -296,11 +294,11 @@ export default function WishlistPage() {
                         ) : (
                           <button
                             onClick={() => handleAddToCart(product)}
-                            disabled={addingId === product.slug}
+                            disabled={addingId === product.id}
                             className="w-full bg-[#4a2c2a] text-white py-3.5 text-[10px] font-bold uppercase tracking-widest hover:bg-[#4a2c2a]/95 transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
                           >
                             <FiShoppingCart size={13} />
-                            {addingId === product.slug ? "Adding..." : "Add to Cart"}
+                            {addingId === product.id ? "Adding..." : "Add to Cart"}
                           </button>
                         )}
                       </div>
