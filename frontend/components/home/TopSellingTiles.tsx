@@ -224,6 +224,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addToCartAsync } from '@/store/slices/cartSlice';
 import toast from 'react-hot-toast';
@@ -414,6 +415,7 @@ const ALL_PRODUCTS = [
 ];
 
 export default function TopSellingTiles() {
+  const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [randomizedTiles, setRandomizedTiles] = useState<typeof ALL_PRODUCTS>([]);
@@ -455,8 +457,12 @@ export default function TopSellingTiles() {
 
   const handleAddToCart = (product: any) => {
     if (!token) {
-      toast.error("Please login to add items to cart");
-      return;
+      const continueWithoutLogin = typeof window !== "undefined" && localStorage.getItem("tb_continue_without_login") === "true";
+      if (!continueWithoutLogin) {
+        const currentPath = window.location.pathname + window.location.search;
+        router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+        return;
+      }
     }
     // Note: Since these are static products, we'd normally need a real ID from the DB
     // For now, we'll try to use the name as ID if no ID is present, or just show a message

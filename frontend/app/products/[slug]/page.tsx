@@ -689,6 +689,12 @@ export default function ProductDetailPage({
 
   const handleAddToCart = async () => {
     if (!token) {
+      const continueWithoutLogin = typeof window !== "undefined" && localStorage.getItem("tb_continue_without_login") === "true";
+      if (!continueWithoutLogin) {
+        const currentPath = window.location.pathname + window.location.search;
+        router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+        return;
+      }
       performMockAdd();
       setIsSuccess(true);
       setCartOpen(true);
@@ -715,23 +721,21 @@ export default function ProductDetailPage({
 
   /* ── Wishlist — toggle and persist to localStorage ── */
   const handleWishlist = () => {
-    setIsWishlisted((prev) => {
-      const next = !prev;
-      try {
-        const stored = JSON.parse(
-          localStorage.getItem("tb_wishlist") || "[]",
-        ) as string[];
-        const updated = next
-          ? [...new Set([...stored, fileNameOnly])]
-          : stored.filter((id) => id !== fileNameOnly);
-        localStorage.setItem("tb_wishlist", JSON.stringify(updated));
-        // Notify navbar to update wishlist badge count
-        window.dispatchEvent(new Event("wishlist-updated"));
-      } catch {
-        // ignore storage errors
-      }
-      return next;
-    });
+    const next = !isWishlisted;
+    setIsWishlisted(next);
+    try {
+      const stored = JSON.parse(
+        localStorage.getItem("tb_wishlist") || "[]",
+      ) as string[];
+      const updated = next
+        ? [...new Set([...stored, fileNameOnly])]
+        : stored.filter((id) => id !== fileNameOnly);
+      localStorage.setItem("tb_wishlist", JSON.stringify(updated));
+      // Notify navbar to update wishlist badge count
+      window.dispatchEvent(new Event("wishlist-updated"));
+    } catch {
+      // ignore storage errors
+    }
   };
 
   /* ── Share ── */

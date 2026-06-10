@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { supabase } from '../config/supabase.js';
 import * as paypal from '../utils/paypalService.js';
 import Stripe from 'stripe';
+import { calculateShippingRateInternal } from './deliveryController.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_123', {
   apiVersion: '2024-04-10' as any,
@@ -753,8 +754,8 @@ export const placeManualOrder = async (req: Request, res: Response) => {
     }
 
     // 3. Perform server-side calculations
-    const shipping_cost = 15.00;
     let subtotal = 0;
+    let totalWeight = 0;
 
     const orderItemsToInsert = cartItemsList.map((item: any) => {
       const product = Array.isArray(item.products) ? item.products[0] : item.products;
@@ -772,6 +773,10 @@ export const placeManualOrder = async (req: Request, res: Response) => {
         coverage = item.unit === "pieces"
           ? item.quantity * (1.44 / piecesPerBox)
           : item.quantity * 1.44;
+
+        // Weight calculation: boxes * 29
+        const boxes = item.unit === "pieces" ? item.quantity / piecesPerBox : item.quantity;
+        totalWeight += (boxes * 29);
       }
       subtotal += unitPrice * coverage;
 
@@ -784,6 +789,14 @@ export const placeManualOrder = async (req: Request, res: Response) => {
         price_at_purchase: unitPrice
       };
     });
+
+    let shipping_cost = 15.00;
+    try {
+      const rateResult = await calculateShippingRateInternal(postcode, totalWeight);
+      shipping_cost = rateResult.price;
+    } catch (err) {
+      console.error("Error calculating dynamic shipping cost:", err);
+    }
 
     const vat_amount = subtotal * 0.20;
     

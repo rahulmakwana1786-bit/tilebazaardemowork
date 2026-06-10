@@ -1,20 +1,21 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { loginUser, googleLoginUser } from '@/store/slices/authSlice';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 import { GoogleLogin } from '@react-oauth/google';
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [otpCode, setOtpCode] = useState('');
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { loading, error } = useAppSelector((state) => state.auth);
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect') || '/';
 
+  const { loading, error } = useAppSelector((state) => state.auth);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -23,13 +24,11 @@ export default function LoginPage() {
     const result = await dispatch(loginUser({ email, password }));
     
     if (loginUser.fulfilled.match(result)) {
-
-
       const user = result.payload.user;
       if (user.role === 'admin') {
         router.push('/admin');
       } else {
-        router.push('/');
+        router.push(redirect);
       }
     } else {
       console.error("Login failed:", (result as any).payload || (result as any).error);
@@ -40,13 +39,11 @@ export default function LoginPage() {
     if (credentialResponse.credential) {
       const result = await dispatch(googleLoginUser(credentialResponse.credential));
       if (googleLoginUser.fulfilled.match(result)) {
-
-
         const user = result.payload.user;
         if (user.role === 'admin') {
           router.push('/admin');
         } else {
-          router.push('/');
+          router.push(redirect);
         }
       } else {
         const errorMsg = result.payload as string;
@@ -59,7 +56,10 @@ export default function LoginPage() {
     }
   };
 
-
+  const handleContinueWithoutLogin = () => {
+    localStorage.setItem("tb_continue_without_login", "true");
+    router.push(redirect);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -122,13 +122,24 @@ export default function LoginPage() {
               <span className="text-xs text-center text-gray-500 uppercase tracking-widest">Or continue with</span>
               <span className="border-b w-1/5 lg:w-1/4"></span>
             </div>
-            <div className="mt-6 flex justify-center">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => {
-                  console.log('Google Login Failed');
-                }}
-              />
+            
+            <div className="mt-6 flex flex-col items-center gap-4">
+              <div className="flex justify-center w-full">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => {
+                    console.log('Google Login Failed');
+                  }}
+                />
+              </div>
+              
+              <button
+                type="button"
+                onClick={handleContinueWithoutLogin}
+                className="w-full py-3.5 border border-[#4a2c2a] text-[#4a2c2a] hover:bg-[#4a2c2a] hover:text-white text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center bg-transparent active:scale-[0.98]"
+              >
+                Continue Without Login
+              </button>
             </div>
             
             <p className="mt-8 text-center text-xs text-gray-500">
@@ -136,5 +147,13 @@ export default function LoginPage() {
             </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><p className="text-sm text-[#4a2c2a] uppercase tracking-widest animate-pulse">Loading...</p></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

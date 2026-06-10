@@ -1,5 +1,17 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase.js';
+import { calculateShippingRateInternal } from './deliveryController.js';
+
+const checkIsAccessory = (product: any): boolean => {
+  if (!product) return false;
+  const name = (product?.name || "").toUpperCase();
+  const category = (product?.category || "").toUpperCase();
+  const image = (product?.image || "").toUpperCase();
+  return category === "ACCESSORIES" || 
+         name.includes("TRIM") || name.includes("SPACER") || name.includes("WEDGE") || name.includes("MATTING") || name.includes("LEVEL") || name.includes("ADHESIVE") || name.includes("GLUE") ||
+         image.includes("TRIM") || image.includes("SPACER") || image.includes("WEDGE") || image.includes("MATTING") || image.includes("LEVEL") || image.includes("ADHESIVE") || image.includes("GLUE") ||
+         image.includes("/ACCESSORIES/");
+};
 
 export const createOrder = async (req: Request, res: Response) => {
   try {
@@ -7,14 +19,14 @@ export const createOrder = async (req: Request, res: Response) => {
     // We only take address from body; we calculate amounts on the server for security
     const { address_line1, address_line2, city, postcode, country = 'United Kingdom' } = req.body;
 
-    // 1. Get current cart items with product snapshots (name, image, price)
+    // 1. Get current cart items with product snapshots (name, image, price, category, size)
     const { data: cartItems, error: cartError } = await supabase
       .from('cart_items')
       .select(`
         quantity,
         unit,
         product_id,
-        products (name, image, price, discount_price)
+        products (name, image, price, discount_price, category, size)
       `)
       .eq('user_id', userId);
 
@@ -23,8 +35,8 @@ export const createOrder = async (req: Request, res: Response) => {
     }
 
     // 2. Server-side Calculation logic
-    const shipping_cost = 15.00; // Standard UK shipping
     let subtotal = 0;
+    let totalWeight = 0;
 
     const orderItemsToInsert = cartItems.map((item: any) => {
       // Handle the Supabase join structure safely
@@ -34,17 +46,39 @@ export const createOrder = async (req: Request, res: Response) => {
       const unitPrice = (discountPrice > 0 && discountPrice < basePrice) 
         ? discountPrice 
         : basePrice;
-      subtotal += unitPrice * item.quantity;
+
+      const isAcc = checkIsAccessory(product);
+      let coverage = item.quantity;
+      if (!isAcc) {
+        const is600x600 = (product?.size || "").toLowerCase().includes("600x600");
+        const piecesPerBox = is600x600 ? 4 : 2;
+        coverage = item.unit === "pieces"
+          ? item.quantity * (1.44 / piecesPerBox)
+          : item.quantity * 1.44;
+
+        // Weight calculation: boxes * 29
+        const boxes = item.unit === "pieces" ? item.quantity / piecesPerBox : item.quantity;
+        totalWeight += (boxes * 29);
+      }
+      subtotal += unitPrice * coverage;
 
       return {
         product_id: item.product_id,
         product_name: product?.name || 'Unknown Product',
         product_image: product?.image || '',
         quantity: item.quantity,
-        unit: item.unit || 'sqm',
+        unit: item.unit || 'boxes',
         price_at_purchase: unitPrice
       };
     });
+
+    let shipping_cost = 15.00;
+    try {
+      const rateResult = await calculateShippingRateInternal(postcode, totalWeight);
+      shipping_cost = rateResult.price;
+    } catch (err) {
+      console.error("Error calculating dynamic shipping cost:", err);
+    }
 
     const vat_amount = subtotal * 0.20; // 20% VAT
     const total_amount = subtotal + vat_amount + shipping_cost;
@@ -94,8 +128,6 @@ export const createOrder = async (req: Request, res: Response) => {
 };
 
 // Get all orders for the logged-in user
-
-
 export const getOrderById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -122,7 +154,6 @@ export const getOrderById = async (req: Request, res: Response) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 
 export const getUserOrders = async (req: Request, res: Response) => {
   try {

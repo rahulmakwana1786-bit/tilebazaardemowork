@@ -83,6 +83,12 @@ export default function TilePackCalculator({
     const unitToSend = totalBoxesToCart > 0 ? "boxes" : "pieces";
 
     if (!token) {
+      const continueWithoutLogin = typeof window !== "undefined" && localStorage.getItem("tb_continue_without_login") === "true";
+      if (!continueWithoutLogin) {
+        const currentPath = window.location.pathname + window.location.search;
+        router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+        return;
+      }
       dispatch(
         mockAddToCart({
           id: Math.random().toString(),

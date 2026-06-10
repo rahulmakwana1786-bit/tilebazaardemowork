@@ -248,20 +248,28 @@ export default function CartDrawer({
   const remainderWeight = totalWeight % 1000;
   let partialPallet = "";
   if (remainderWeight > 0) {
-    if (remainderWeight <= 250) partialPallet = "1 QUARTER";
+    if (remainderWeight <= 30 && fullPallets === 0) partialPallet = "1 PARCEL";
+    else if (remainderWeight <= 250) partialPallet = "1 QUARTER";
     else if (remainderWeight <= 500) partialPallet = "1 HALF";
+    else if (remainderWeight <= 750) partialPallet = "1 FULL LIGHT";
     else partialPallet = "1 FULL"; 
   }
   
   let displayPallet = "0";
-  if (fullPallets > 0 && partialPallet && partialPallet !== "1 FULL") {
+  if (fullPallets > 0) {
+    if (partialPallet && partialPallet !== "1 FULL") {
       displayPallet = `${fullPallets} FULL & ${partialPallet}`;
-  } else if (fullPallets > 0 && partialPallet === "1 FULL") {
+    } else if (partialPallet === "1 FULL") {
       displayPallet = `${fullPallets + 1} FULL`;
-  } else if (fullPallets > 0) {
+    } else {
       displayPallet = `${fullPallets} FULL`;
-  } else if (partialPallet) {
-      displayPallet = `0 FULL & ${partialPallet}`;
+    }
+  } else {
+    if (partialPallet) {
+      displayPallet = partialPallet;
+    } else {
+      displayPallet = "0";
+    }
   }
 
   useEffect(() => {
