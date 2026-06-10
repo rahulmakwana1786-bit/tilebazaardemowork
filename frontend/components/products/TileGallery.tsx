@@ -73,6 +73,8 @@ const getPreviewUrl = (
       .replace(/[-_\s'’]/g, "");  // remove spaces, hyphens, underscores, quotes
   };
 
+  const targetSize = size.toLowerCase().replace(/\s/g, ""); // e.g. "600x600" or "600x1200"
+
   let normalizedFile = normalize(fileNameOnly);
   if (normalizedFile === "lux09r1") {
     normalizedFile = "lux09hl1";
@@ -80,13 +82,12 @@ const getPreviewUrl = (
   if (normalizedFile.includes("salted") && (normalizedFile.includes("concreto") || normalizedFile.includes("concrete"))) {
     normalizedFile = "saltedconcretecrema";
   }
-  if (normalizedFile === "artefluowhite1") {
+  if (normalizedFile === "artefluowhite1" && targetSize === "600x600") {
     normalizedFile = "artefluowhiter1";
   }
   if (normalizedFile.startsWith("phantom")) {
     normalizedFile = "phantomdecor";
   }
-  const targetSize = size.toLowerCase().replace(/\s/g, ""); // e.g. "600x600" or "600x1200"
 
   // Filter preview paths to only include paths matching the target size folder
   const sizeFilteredPaths = previewPaths.filter((p) => {

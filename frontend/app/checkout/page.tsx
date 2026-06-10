@@ -9,13 +9,9 @@ import { clearCart } from "@/store/slices/cartSlice";
 import { ChevronLeft, Loader2, CheckCircle2, AlertCircle, CreditCard, Ticket } from "lucide-react";
 import api from "@/lib/axios";
 import { validateUKPostcode, formatUKPostcode, isUKCountry } from "@/lib/deliveryValidation";
-import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements } from '@stripe/react-stripe-js';
-import StripePaymentForm from "@/components/checkout/StripePaymentForm";
+import toast from "react-hot-toast";
 
-// Initialize Stripe outside component
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_123');
+// Stripe disabled
 
 const getProductImagePath = (product: any) => {
   if (!product || !product.image) return "/placeholder-tile.jpg";
@@ -92,9 +88,9 @@ export default function CheckoutPage() {
   });
 
   const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal'>('card');
-  const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
   const [createdLocalOrderId, setCreatedLocalOrderId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalEmail, setModalEmail] = useState("");
 
   // Coupon State
   const [couponCode, setCouponCode] = useState("");
@@ -117,18 +113,21 @@ export default function CheckoutPage() {
     const product = item.product;
     const isAcc = checkIsAccessory(product);
     if (isAcc) return acc;
-    return acc + (item.quantity * 29);
+    const is600x600 = (product?.size || "").toLowerCase().includes("600x600");
+    const piecesPerBox = is600x600 ? 4 : 2;
+    const boxes = item.unit === "pieces" ? item.quantity / piecesPerBox : item.quantity;
+    return acc + (boxes * 29);
   }, 0);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (isMounted && !token) {
-      router.push("/login?redirect=/checkout");
-    }
-  }, [token, isMounted, router]);
+  // useEffect(() => {
+  //   if (isMounted && !token) {
+  //     router.push("/login?redirect=/checkout");
+  //   }
+  // }, [token, isMounted, router]);
 
   useEffect(() => {
     if (user) {
@@ -172,8 +171,15 @@ export default function CheckoutPage() {
 
   const subtotalPrice = cartItems.reduce((acc, item) => {
     const isAcc = checkIsAccessory(item.product);
-    const multiplier = isAcc ? 1 : 1.44;
-    return acc + getProductPrice(item.product) * item.quantity * multiplier;
+    if (isAcc) {
+      return acc + getProductPrice(item.product) * item.quantity;
+    }
+    const is600x600 = (item.product?.size || "").toLowerCase().includes("600x600");
+    const piecesPerBox = is600x600 ? 4 : 2;
+    const coverage = item.unit === "pieces"
+      ? item.quantity * (1.44 / piecesPerBox)
+      : item.quantity * 1.44;
+    return acc + getProductPrice(item.product) * coverage;
   }, 0);
 
   const discountAmount = appliedCoupon 
@@ -236,21 +242,50 @@ export default function CheckoutPage() {
     errors.postcode === "" &&
     errors.country === "";
 
-  const initStripePayment = async () => {
+  const handlePlaceOrderClick = () => {
+    if (!isFormValid) {
+      toast.error("Please fill in all contact and shipping address details.");
+      return;
+    }
+    setModalEmail(formData.email);
+    setIsModalOpen(true);
+  };
+
+  const handleManualOrderSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!modalEmail || !modalEmail.includes("@")) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
     setIsProcessing(true);
     setErrorMsg(null);
     try {
-      const response = await api.post("/api/payments/create-stripe-intent", {
+      const payloadCartItems = cartItems.map((item) => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+        unit: item.unit || 'boxes',
+      }));
+
+      const response = await api.post("/api/payments/place-manual-order", {
+        email: modalEmail,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone,
         address_line1: formData.address,
         city: formData.city,
         postcode: formData.postcode,
         country: formData.country,
-        couponCode: appliedCoupon?.code
+        couponCode: appliedCoupon?.code,
+        cartItems: payloadCartItems
       });
-      setStripeClientSecret(response.data.clientSecret);
+
       setCreatedLocalOrderId(response.data.orderId);
+      dispatch(clearCart());
+      setIsModalOpen(false);
+      setIsSuccess(true);
     } catch (err: any) {
-      setErrorMsg(err.response?.data?.message || err.message || "Failed to initiate payment");
+      setErrorMsg(err.response?.data?.message || err.message || "Failed to place your order.");
+      toast.error(err.response?.data?.message || err.message || "Failed to place your order.");
     } finally {
       setIsProcessing(false);
     }
@@ -261,11 +296,11 @@ export default function CheckoutPage() {
   if (isSuccess) {
     return (
       <div className="min-h-screen bg-[#faf9f8] pt-32 pb-20 px-4 flex flex-col items-center justify-center">
-        <div className="bg-white p-12 max-w-xl w-full text-center shadow-2xl border border-gray-100">
+        <div className="bg-white p-12 max-w-xl w-full text-center shadow-2xl border border-gray-100 animate-in fade-in duration-300">
           <CheckCircle2 className="w-20 h-20 text-[#4a2c2a] mx-auto mb-8" strokeWidth={1.5} />
-          <h1 className="text-4xl font-serif text-[#4a2c2a] mb-4">Payment Confirmed</h1>
-          <p className="text-gray-500 mb-8 leading-relaxed">
-            Thank you for your purchase. Your payment was securely processed, and your order is now being processed. You will receive an email confirmation shortly.
+          <h1 className="text-4xl font-serif text-[#4a2c2a] mb-4">Order Placed Successfully</h1>
+          <p className="text-gray-600 mb-8 leading-relaxed text-sm">
+            Your mail id is saved , the payment link will be share to the registered mail id within 3 days
           </p>
           <div className="bg-[#fbfbfb] p-6 mb-8 text-left border border-gray-50">
             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Order Reference</p>
@@ -387,141 +422,19 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Payment Method */}
+              {/* Checkout Placement Action */}
               <div>
-                <h2 className="text-[16px] font-bold text-[#4a2c2a] mb-6">Payment</h2>
-                <p className="text-xs text-gray-500 mb-4">All transactions are secure and encrypted.</p>
-                
-                <div className="border border-gray-200 rounded-sm shadow-sm overflow-hidden">
-                  
-                  {/* Credit Card Option */}
-                  <div 
-                    onClick={() => { if (!stripeClientSecret) setPaymentMethod('card'); }}
-                    className={`p-4 flex items-center justify-between cursor-pointer border-b border-gray-200 ${paymentMethod === 'card' ? 'bg-gray-50/80' : 'bg-white'}`}
+                <h2 className="text-[16px] font-bold text-[#4a2c2a] mb-6">Complete Order</h2>
+                <div className="bg-[#faf9f8] p-6 border border-gray-100 flex flex-col gap-4">
+                  <p className="text-sm text-gray-500 leading-relaxed">
+                    By placing this order, you agree to register your email. A payment link will be sent to your registered email address within 3 days.
+                  </p>
+                  <button
+                    onClick={handlePlaceOrderClick}
+                    className="w-full bg-[#4a2c2a] text-white py-4 text-[11px] font-black uppercase tracking-[0.25em] hover:bg-black transition-colors rounded-sm flex items-center justify-center gap-2 shadow-md"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'card' ? 'border-[#4a2c2a]' : 'border-gray-300'}`}>
-                        {paymentMethod === 'card' && <div className="w-2 h-2 rounded-full bg-[#4a2c2a]" />}
-                      </div>
-                      <span className="text-sm font-bold text-[#4a2c2a]">Credit/Debit Card</span>
-                    </div>
-                    <div className="flex gap-1">
-                      <CreditCard className="w-6 h-6 text-gray-400" />
-                    </div>
-                  </div>
-
-                  {paymentMethod === 'card' && (
-                    <div className="p-6 bg-gray-50/80 border-b border-gray-200">
-                      {!isFormValid ? (
-                        <div className="text-center py-6">
-                          <p className="text-sm text-gray-500 mb-4">Please complete the required form fields above to proceed with payment.</p>
-                        </div>
-                      ) : stripeClientSecret ? (
-                        <Elements stripe={stripePromise} options={{ clientSecret: stripeClientSecret }}>
-                          <StripePaymentForm 
-                            clientSecret={stripeClientSecret} 
-                            orderId={createdLocalOrderId!} 
-                            onSuccess={() => setIsSuccess(true)}
-                            onCancel={() => setStripeClientSecret(null)}
-                          />
-                        </Elements>
-                      ) : (
-                        <button
-                          onClick={initStripePayment}
-                          disabled={isProcessing}
-                          className="w-full bg-[#4a2c2a] text-white py-4 text-[11px] font-black uppercase tracking-[0.2em] hover:bg-[#3a1c1a] transition-colors flex justify-center items-center gap-2"
-                        >
-                          {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Proceed to Secure Payment"}
-                        </button>
-                      )}
-                      
-                      {errorMsg && paymentMethod === 'card' && !stripeClientSecret && (
-                        <div className="mt-4 bg-red-50 text-red-600 p-3 text-xs flex items-center gap-2">
-                          <AlertCircle className="w-4 h-4" /> {errorMsg}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* PayPal Option */}
-                  <div 
-                    onClick={() => { if (!stripeClientSecret) setPaymentMethod('paypal'); }}
-                    className={`p-4 flex items-center justify-between cursor-pointer ${paymentMethod === 'paypal' ? 'bg-gray-50/80 border-t border-gray-200' : 'bg-white'}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'paypal' ? 'border-[#4a2c2a]' : 'border-gray-300'}`}>
-                        {paymentMethod === 'paypal' && <div className="w-2 h-2 rounded-full bg-[#4a2c2a]" />}
-                      </div>
-                      <span className="text-sm font-bold text-[#4a2c2a]">PayPal</span>
-                    </div>
-                    <div className="font-bold text-[#003087] text-lg italic tracking-tighter">
-                      Pay<span className="text-[#009cde]">Pal</span>
-                    </div>
-                  </div>
-
-                  {paymentMethod === 'paypal' && (
-                    <div className="p-6 bg-gray-50/80">
-                      <p className="text-sm text-gray-500 mb-6 text-center">
-                        After clicking "Pay with PayPal", you will be redirected to PayPal to complete your purchase securely.
-                      </p>
-                      
-                      {!isFormValid ? (
-                        <div className="w-full bg-gray-200 text-gray-400 py-4 text-[11px] font-black uppercase tracking-[0.2em] text-center cursor-not-allowed">
-                          Enter Shipping Info First
-                        </div>
-                      ) : (
-                        <div className="animate-in fade-in duration-300 max-w-sm mx-auto">
-                          <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test", currency: "GBP" }}>
-                            <PayPalButtons
-                              style={{ layout: "vertical", color: "gold", shape: "rect" }}
-                              createOrder={async () => {
-                                setIsProcessing(true);
-                                setErrorMsg(null);
-                                try {
-                                  const response = await api.post("/api/payments/create-order", {
-                                    address_line1: formData.address,
-                                    city: formData.city,
-                                    postcode: formData.postcode,
-                                    country: formData.country,
-                                    couponCode: appliedCoupon?.code
-                                  });
-                                  setCreatedLocalOrderId(response.data.orderId);
-                                  return response.data.paypalOrderId;
-                                } catch (err: any) {
-                                  setIsProcessing(false);
-                                  throw new Error(err.response?.data?.message || err.message);
-                                }
-                              }}
-                              onApprove={async (data) => {
-                                try {
-                                  await api.post("/api/payments/capture-order", {
-                                    orderId: createdLocalOrderId,
-                                    paypalOrderId: data.orderID,
-                                  });
-                                  dispatch(clearCart());
-                                  setIsSuccess(true);
-                                } catch (err: any) {
-                                  setIsProcessing(false);
-                                  setErrorMsg(err.response?.data?.message || err.message);
-                                }
-                              }}
-                              onError={(err) => {
-                                setIsProcessing(false);
-                                setErrorMsg("An error occurred during PayPal checkout.");
-                              }}
-                              onCancel={() => setIsProcessing(false)}
-                            />
-                          </PayPalScriptProvider>
-                        </div>
-                      )}
-                      {errorMsg && paymentMethod === 'paypal' && (
-                        <div className="mt-4 bg-red-50 text-red-600 p-3 text-xs flex items-center gap-2">
-                          <AlertCircle className="w-4 h-4" /> {errorMsg}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
+                    Place Your Order
+                  </button>
                 </div>
               </div>
 
@@ -547,7 +460,13 @@ export default function CheckoutPage() {
                       const product = item.product;
                       if (!product) return null;
                       const isAcc = checkIsAccessory(product);
-                      const coverage = isAcc ? item.quantity : item.quantity * 1.44;
+                      const is600x600 = (product?.size || "").toLowerCase().includes("600x600");
+                      const piecesPerBox = is600x600 ? 4 : 2;
+                      const coverage = isAcc 
+                        ? item.quantity 
+                        : item.unit === "pieces"
+                        ? item.quantity * (1.44 / piecesPerBox)
+                        : item.quantity * 1.44;
                       const price = getProductPrice(product);
 
                       return (
@@ -570,7 +489,7 @@ export default function CheckoutPage() {
                               {product.name}
                             </h4>
                             <p className="text-[11px] text-gray-500">
-                              {isAcc ? `£${price.toFixed(2)} each` : `£${price.toFixed(2)} /m² • ${product.size} • ${coverage.toFixed(2)} SQM`}
+                              {isAcc ? `£${price.toFixed(2)} each` : `£${price.toFixed(2)} /m² • ${product.size} • ${coverage.toFixed(2)} SQM (${item.unit === 'pieces' ? `${item.quantity} pcs` : `${item.quantity} boxes`})`}
                             </p>
                           </div>
                           <div className="font-bold text-[13px] text-[#4a2c2a]">
@@ -657,6 +576,47 @@ export default function CheckoutPage() {
 
         </div>
       </div>
+
+      {/* Email Confirmation Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white p-8 md:p-10 max-w-lg w-full rounded-sm shadow-2xl relative border border-gray-100 animate-in fade-in zoom-in duration-200 text-left">
+            <h3 className="text-2xl font-serif text-[#4a2c2a] mb-4">Confirm Email Address</h3>
+            <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+              Please confirm the email address where we will send your order details and payment link.
+            </p>
+            <form onSubmit={handleManualOrderSubmit}>
+              <div className="mb-6">
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  value={modalEmail}
+                  onChange={(e) => setModalEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="w-full border border-gray-200 px-4 py-3.5 text-sm text-black placeholder:text-gray-400 focus:outline-none focus:border-[#4a2c2a] transition-colors rounded-sm bg-white"
+                />
+              </div>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex-1 py-3.5 border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors text-[10px] font-bold uppercase tracking-widest rounded-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isProcessing}
+                  className="flex-1 py-3.5 bg-[#4a2c2a] text-white hover:bg-black transition-colors text-[10px] font-bold uppercase tracking-widest rounded-sm flex items-center justify-center gap-2"
+                >
+                  {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Order"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

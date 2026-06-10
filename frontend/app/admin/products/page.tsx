@@ -135,7 +135,7 @@ export default function AdminProductsPage() {
       const matchesSize = filterSize === "All" || 
         (filterSize === "Accessories" 
           ? p.category?.toLowerCase() === "accessories" 
-          : p.size === filterSize);
+          : p.size?.toLowerCase() === filterSize.toLowerCase());
       const matchesStatus = filterStatus === "All" || 
         (filterStatus === "Active" ? p.is_active : !p.is_active);
       
@@ -278,7 +278,9 @@ export default function AdminProductsPage() {
                     </div>
                   </td>
                   <td className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{product.size}</td>
-                  <td className="text-[12px] font-black text-[#4a2c2a]">£ {product.price.toFixed(2)}</td>
+                  <td className="text-[12px] font-black text-[#4a2c2a]">
+                    £ {(product.discount_price !== null && product.discount_price !== undefined) ? product.discount_price.toFixed(2) : product.price.toFixed(2)}
+                  </td>
                   <td>
                     {editingStockId === product.id ? (
                       <input
@@ -347,7 +349,9 @@ export default function AdminProductsPage() {
                </div>
                <div className="text-center">
                   <h3 className="text-[11px] font-bold uppercase tracking-wider mb-1 truncate">{product.name}</h3>
-                  <p className="text-[12px] font-black text-[#4a2c2a] mb-4">£{product.price}</p>
+                  <p className="text-[12px] font-black text-[#4a2c2a] mb-4">
+                    £{(product.discount_price !== null && product.discount_price !== undefined) ? product.discount_price.toFixed(2) : product.price.toFixed(2)}
+                  </p>
                   <Link 
                     href={`/admin/products/${product.id}`}
                     className="block w-full border border-gray-100 text-[9px] font-black uppercase py-2 hover:border-[#4a2c2a] transition-all"

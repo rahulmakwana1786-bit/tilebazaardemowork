@@ -132,6 +132,25 @@ const cartSlice = createSlice({
     clearCart: (state) => {
       state.items = [];
       state.cartTotal = 0;
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("tb_guest_cart");
+      }
+    },
+    hydrateGuestCart: (state) => {
+      if (typeof window !== "undefined") {
+        try {
+          const stored = localStorage.getItem("tb_guest_cart");
+          if (stored) {
+            state.items = JSON.parse(stored);
+            state.cartTotal = state.items.reduce(
+              (total, item) => total + (item.product?.price || 0) * item.quantity,
+              0,
+            );
+          }
+        } catch (e) {
+          console.error("Failed to load guest cart:", e);
+        }
+      }
     },
     mockAddToCart: (state, action: PayloadAction<CartItem>) => {
       const existingItem = state.items.find(
@@ -146,6 +165,9 @@ const cartSlice = createSlice({
         (total, item) => total + (item.product?.price || 0) * item.quantity,
         0,
       );
+      if (typeof window !== "undefined") {
+        localStorage.setItem("tb_guest_cart", JSON.stringify(state.items));
+      }
     },
     mockRemoveFromCart: (state, action: PayloadAction<string>) => {
       state.items = state.items.filter((item) => item.id !== action.payload);
@@ -153,6 +175,9 @@ const cartSlice = createSlice({
         (total, item) => total + (item.product?.price || 0) * item.quantity,
         0,
       );
+      if (typeof window !== "undefined") {
+        localStorage.setItem("tb_guest_cart", JSON.stringify(state.items));
+      }
     },
     mockUpdateQuantity: (
       state,
@@ -166,6 +191,9 @@ const cartSlice = createSlice({
         (total, item) => total + (item.product?.price || 0) * item.quantity,
         0,
       );
+      if (typeof window !== "undefined") {
+        localStorage.setItem("tb_guest_cart", JSON.stringify(state.items));
+      }
     },
   },
   extraReducers: (builder) => {
@@ -214,6 +242,7 @@ const cartSlice = createSlice({
 
 export const {
   clearCart,
+  hydrateGuestCart,
   mockAddToCart,
   mockRemoveFromCart,
   mockUpdateQuantity,

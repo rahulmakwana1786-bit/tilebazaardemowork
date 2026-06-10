@@ -123,7 +123,8 @@ export default function WishlistPage() {
   // Add item to cart
   const handleAddToCart = async (product: WishlistProduct) => {
     if (!token) {
-      router.push("/login");
+      performMockAdd(product.slug, getProductDetails(product.slug));
+      setCartOpen(true);
       return;
     }
     try {

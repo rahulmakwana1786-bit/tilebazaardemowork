@@ -42,6 +42,7 @@ export default function TilePackCalculator({
   const dispatch = useAppDispatch();
   const { setCartOpen } = useCart();
   const [quantities, setQuantities] = useState<Record<number, number>>({});
+  const [customPieces, setCustomPieces] = useState<string>("");
   const [isAdding, setIsAdding] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -51,6 +52,7 @@ export default function TilePackCalculator({
   const piecesPerBox = is600x600 ? 4 : 2;
 
   const handleQtyChange = (boxCount: number, delta: number) => {
+    setCustomPieces(""); // clear custom pieces
     setQuantities((prev) => {
       const current = prev[boxCount] || 0;
       const next = Math.max(0, current + delta);
@@ -58,37 +60,36 @@ export default function TilePackCalculator({
     });
   };
 
+  const handleCustomPiecesChange = (val: string) => {
+    setQuantities({}); // clear presets
+    setCustomPieces(val);
+  };
+
   const totalBoxesToCart = Object.entries(quantities).reduce(
     (acc, [boxCount, qty]) => acc + Number(boxCount) * qty,
     0
   );
 
-  const handleAddToCart = async () => {
-    if (totalBoxesToCart === 0) return;
-    
-    if (!token) {
-      router.push("/login");
-      return;
-    }
+  const customPiecesInt = parseInt(customPieces) || 0;
+  const customArea = customPiecesInt * (1.44 / piecesPerBox);
+  const customPrice = customArea * pricePerM2;
 
-    try {
-      setIsAdding(true);
-      await dispatch(
-        addToCartAsync({ product_id: productId, quantity: totalBoxesToCart })
-      ).unwrap();
-      setIsSuccess(true);
-      setCartOpen(true);
-      setQuantities({}); // Reset
-      setTimeout(() => setIsSuccess(false), 2500);
-    } catch {
-      // Fallback
+  const hasItems = totalBoxesToCart > 0 || customPiecesInt > 0;
+
+  const handleAddToCart = async () => {
+    if (!hasItems) return;
+    
+    const qtyToSend = totalBoxesToCart > 0 ? totalBoxesToCart : customPiecesInt;
+    const unitToSend = totalBoxesToCart > 0 ? "boxes" : "pieces";
+
+    if (!token) {
       dispatch(
         mockAddToCart({
           id: Math.random().toString(),
           user_id: "preview_user",
           product_id: productId,
-          quantity: totalBoxesToCart,
-          unit: "boxes",
+          quantity: qtyToSend,
+          unit: unitToSend,
           product: {
             id: productId,
             name: productName,
@@ -102,6 +103,44 @@ export default function TilePackCalculator({
       setIsSuccess(true);
       setCartOpen(true);
       setQuantities({});
+      setCustomPieces("");
+      setTimeout(() => setIsSuccess(false), 2500);
+      return;
+    }
+
+    try {
+      setIsAdding(true);
+      await dispatch(
+        addToCartAsync({ product_id: productId, quantity: qtyToSend, unit: unitToSend })
+      ).unwrap();
+      setIsSuccess(true);
+      setCartOpen(true);
+      setQuantities({}); // Reset
+      setCustomPieces("");
+      setTimeout(() => setIsSuccess(false), 2500);
+    } catch {
+      // Fallback
+      dispatch(
+        mockAddToCart({
+          id: Math.random().toString(),
+          user_id: "preview_user",
+          product_id: productId,
+          quantity: qtyToSend,
+          unit: unitToSend,
+          product: {
+            id: productId,
+            name: productName,
+            price: pricePerM2,
+            image: image,
+            size: size,
+            slug: productId,
+          },
+        })
+      );
+      setIsSuccess(true);
+      setCartOpen(true);
+      setQuantities({});
+      setCustomPieces("");
       setTimeout(() => setIsSuccess(false), 2500);
     } finally {
       setIsAdding(false);
@@ -115,7 +154,7 @@ export default function TilePackCalculator({
           Select Tile Pack
         </h3>
         <p className="text-[12px] text-gray-500 font-medium">
-          Choose your coverage area for faster checkout
+          Choose your coverage area or customize quantity
         </p>
       </div>
 
@@ -152,6 +191,27 @@ export default function TilePackCalculator({
             </div>
           );
         })}
+        {/* Mobile Custom Pieces Card */}
+        <div className="bg-white p-4 rounded-sm border border-gray-100 flex flex-col gap-3 shadow-sm">
+          <span className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">Custom Quantity</span>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-[14px] font-bold text-[#4a2c2a]">{customArea.toFixed(2)} m²</span>
+              <span className="text-[11px] text-gray-500 font-medium">£{customPrice.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="1"
+                placeholder="Pieces"
+                value={customPieces}
+                onChange={(e) => handleCustomPiecesChange(e.target.value)}
+                className="w-20 px-2 py-1.5 border border-gray-200 text-[12px] rounded focus:outline-none focus:border-[#4a2c2a] text-black bg-white"
+              />
+              <span className="text-[11px] text-gray-500 font-medium">pcs</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="hidden md:block border-t border-gray-100 mt-2">
@@ -204,6 +264,37 @@ export default function TilePackCalculator({
                 </tr>
               );
             })}
+            {/* Custom Pieces Row */}
+            <tr className="border-b border-gray-100 last:border-0 hover:bg-white transition-colors">
+              <td className="py-5 text-[12px] font-bold text-[#4a2c2a]">
+                {customArea.toFixed(2)} m²
+              </td>
+              <td className="py-5 text-[12px] text-gray-600">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="Enter pieces"
+                    value={customPieces}
+                    onChange={(e) => handleCustomPiecesChange(e.target.value)}
+                    className="w-28 px-2 py-1.5 border border-gray-200 text-[12px] rounded focus:outline-none focus:border-[#4a2c2a] text-black bg-white"
+                  />
+                  <span>pcs</span>
+                </div>
+              </td>
+              <td className="py-5 text-[12px] font-bold text-[#4a2c2a]">
+                £{customPrice.toFixed(2)}
+              </td>
+              <td className="py-5 text-right flex justify-end">
+                <button
+                  onClick={() => setCustomPieces("")}
+                  disabled={!customPieces}
+                  className="text-[10px] font-bold text-gray-400 hover:text-red-500 uppercase tracking-wider disabled:opacity-30"
+                >
+                  Clear
+                </button>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -211,11 +302,11 @@ export default function TilePackCalculator({
       <div className="mt-8">
         <button
           onClick={handleAddToCart}
-          disabled={totalBoxesToCart === 0 || isAdding}
+          disabled={!hasItems || isAdding}
           className={`w-full py-4 text-[11px] font-black uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3 rounded-sm
             ${isSuccess
               ? "bg-green-600 text-white"
-              : totalBoxesToCart === 0 
+              : !hasItems 
                 ? "bg-[#e2e8f0] text-[#94a3b8] cursor-not-allowed"
                 : "bg-[#4a2c2a] text-white hover:bg-[#3a1c1a] shadow-md"
             }`}

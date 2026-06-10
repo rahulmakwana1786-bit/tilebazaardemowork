@@ -69,15 +69,26 @@ import { usePathname } from "next/navigation";
 import { FiShoppingCart, FiUser, FiHeart } from "react-icons/fi";
 import CartDrawer from "../common/CartDrawer";
 import { useCart } from "@/context/CartContext";
-import { useAppSelector } from "@/store/hooks";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { fetchCart, hydrateGuestCart } from "@/store/slices/cartSlice";
 
 const Navbar = () => {
   const pathname = usePathname();
+  const dispatch = useAppDispatch();
   const { isCartOpen, setCartOpen } = useCart();
   const cartItems = useAppSelector((state) => state.cart.items);
-  const { user } = useAppSelector((state) => state.auth);
+  const { user, token } = useAppSelector((state) => state.auth);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [wishlistCount, setWishlistCount] = useState(0);
+
+  // Fetch or hydrate cart on mount or auth change
+  useEffect(() => {
+    if (token) {
+      dispatch(fetchCart());
+    } else {
+      dispatch(hydrateGuestCart());
+    }
+  }, [dispatch, token]);
 
 const readWishlistCount = useCallback(() => {
   if (typeof window === "undefined") return;

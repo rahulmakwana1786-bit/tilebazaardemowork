@@ -195,7 +195,7 @@ export default function Footer() {
           <div className="lg:col-span-4 flex flex-col items-start lg:items-end text-left lg:text-right">
             <div className="relative mb-10 w-full max-w-[400px]">
               <span className="absolute -top-10 left-0 lg:left-auto lg:right-0 font-serif italic text-4xl opacity-80 text-[#4a2c2a]">
-                Join the Bazaar
+                Join the Tile Bazaar
               </span>
               <div className="flex w-full border border-[#4a2c2a] mt-2">
                 <input

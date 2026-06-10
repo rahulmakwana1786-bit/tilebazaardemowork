@@ -10,9 +10,13 @@ interface StripePaymentFormProps {
   orderId: string;
   onSuccess: () => void;
   onCancel: () => void;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
 }
 
-export default function StripePaymentForm({ clientSecret, orderId, onSuccess, onCancel }: StripePaymentFormProps) {
+export default function StripePaymentForm({ clientSecret, orderId, onSuccess, onCancel, email, firstName, lastName, phone }: StripePaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const dispatch = useAppDispatch();
@@ -50,7 +54,11 @@ export default function StripePaymentForm({ clientSecret, orderId, onSuccess, on
         // Capture on backend
         await api.post("/api/payments/capture-stripe", {
           orderId,
-          paymentIntentId: paymentIntent.id
+          paymentIntentId: paymentIntent.id,
+          email,
+          firstName,
+          lastName,
+          phone
         });
         
         dispatch(clearCart());

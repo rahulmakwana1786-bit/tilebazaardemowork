@@ -53,7 +53,10 @@ export default function AddToCartButton({ product }: ProductProps) {
     e.preventDefault();
 
     if (!token) {
-      router.push("/login");
+      performMockAdd();
+      setIsSuccess(true);
+      setCartOpen(true);
+      setTimeout(() => setIsSuccess(false), 2000);
       return;
     }
 
