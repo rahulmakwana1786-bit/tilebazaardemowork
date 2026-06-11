@@ -237,7 +237,11 @@ export default function WishlistPage() {
 
                     {/* Image Card Container */}
                     <Link
-                      href={`/products/${encodeURIComponent(product.slug)}`}
+                      href={
+                        product.slug.includes("slug=") 
+                          ? `/products/${new URLSearchParams(product.slug.split("?")[1]).get("slug")}`
+                          : `/products/${encodeURIComponent(product.slug)}`
+                      }
                       className="relative w-full aspect-[5/4] bg-[#fbfbfb] flex items-center justify-center p-6 mb-5 overflow-hidden group/image cursor-pointer border border-gray-50 hover:border-gray-100 transition-colors"
                     >
                       <Image
@@ -258,7 +262,14 @@ export default function WishlistPage() {
 
                     {/* Meta info */}
                     <div className="flex flex-col flex-grow text-left px-2">
-                      <Link href={`/products/${encodeURIComponent(product.slug)}`} className="hover:text-[#4a2c2a]/70 transition-colors">
+                      <Link
+                        href={
+                          product.slug.includes("slug=") 
+                            ? `/products/${new URLSearchParams(product.slug.split("?")[1]).get("slug")}`
+                            : `/products/${encodeURIComponent(product.slug)}`
+                        }
+                        className="hover:text-[#4a2c2a]/70 transition-colors"
+                      >
                         <h3 className="text-[12px] font-bold uppercase mb-2">
                           {formatFileName(product.name)}
                         </h3>

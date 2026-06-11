@@ -135,6 +135,14 @@ function LoginForm() {
               
               <button
                 type="button"
+                onClick={() => router.push('/admin')}
+                className="w-full py-3.5 bg-zinc-800 text-white hover:bg-zinc-950 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center active:scale-[0.98]"
+              >
+                Admin Login
+              </button>
+
+              <button
+                type="button"
                 onClick={handleContinueWithoutLogin}
                 className="w-full py-3.5 border border-[#4a2c2a] text-[#4a2c2a] hover:bg-[#4a2c2a] hover:text-white text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center bg-transparent active:scale-[0.98]"
               >

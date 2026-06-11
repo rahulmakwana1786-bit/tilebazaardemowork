@@ -10,6 +10,7 @@ import { RootState } from "@/store/store";
 import { useCart } from "@/context/CartContext";
 import TilePackCalculator from "@/components/products/TilePackCalculator";
 import previewMap from "@/app/previewMap.json";
+import api from "@/lib/axios";
 
 /* ─────────────────────────────────────────────
    Pure helper functions (same logic as TileGallery)
@@ -139,7 +140,7 @@ const getProductDetails = (fileName: string) => {
       isAdhesive: false,
       isTrim: false,
     };
-  if (upper.includes("ADHESIVE") || upper.includes("GLUE"))
+  if (upper.includes("ADHESIVE") || upper.includes("GLUE") || upper.includes("LEVEL") || upper.includes("ALTUS"))
     return {
       price: 12,
       unit: "+vat/bag",
@@ -147,7 +148,7 @@ const getProductDetails = (fileName: string) => {
       isAdhesive: true,
       isTrim: false,
     };
-  if (upper.includes("MATTING") || upper.includes("LEVEL"))
+  if (upper.includes("MATTING"))
     return {
       price: 6,
       unit: "+vat/sqm",
@@ -177,22 +178,6 @@ const getProductDetails = (fileName: string) => {
     isAdhesive: false,
     isTrim: false,
   };
-};
-
-const getValidusName = (fileName: string) => {
-  const upper = fileName.toUpperCase();
-  if (upper.includes("ALTUS")) return "Validus Altus";
-  if (upper.includes("RELO")) return "Validus Relo";
-  if (upper.includes("STRUCTA")) return "Validus Structa";
-  if (upper.includes("SERO")) return "Validus Sero";
-  if (upper.includes("PORO")) return "Validus Poro";
-  if (upper.includes("FLEX")) return "Validus Flex";
-  if (upper.includes("RAPID")) return "Validus Rapid";
-  const base = fileName
-    .replace(/\.[^/.]+$/, "")
-    .replace(/[-_]/g, " ")
-    .split(" ")[0];
-  return `Validus ${base}`;
 };
 
 const getCategory = (fileName: string) => {
@@ -251,13 +236,13 @@ const getPreviewUrl = (
   if (normalizedFile.includes("salted") && (normalizedFile.includes("concreto") || normalizedFile.includes("concrete"))) {
     normalizedFile = "saltedconcretecrema";
   }
-  const targetSize = size.toLowerCase().replace(/\s/g, ""); // e.g. "600x600" or "600x1200"
-  if (normalizedFile === "artefluowhite1" && targetSize === "600x600") {
+  if (normalizedFile === "artefluowhite1") {
     normalizedFile = "artefluowhiter1";
   }
   if (normalizedFile.startsWith("phantom")) {
     normalizedFile = "phantomdecor";
   }
+  const targetSize = size.toLowerCase().replace(/\s/g, ""); // e.g. "600x600" or "600x1200"
 
   // Filter preview paths to only include paths matching the target size folder
   const sizeFilteredPaths = previewPaths.filter((p) => {
@@ -311,41 +296,7 @@ const getPreviewUrl = (
   }
 
   // 2. Check leftSideVariantsGroup for combo_tiles
-  const leftSideVariantsGroup = [
-    ["artovel 018 dk", "artovel 018 hl"],
-    ["earharo hl", "eartharo brwon f1", "earharo brown f1"],
-    ["el glitter aqua"],
-    ["gl 2509 decor", "gl 2509 lt"],
-    ["gl 2511 decor", "gl 2511 lt"],
-    ["gl 2513 decore", "gl 2513 lt"],
-    ["gl 2514 decore", "gl 2514 lt"],
-    ["emparador brown"],
-    ["irish red mp 1", "levanto black 3 mo 1"],
-    ["luxurious blue"],
-    ["phantom decor", "phantom onyx white"],
-    ["prizma 08 hl", "prizma 08 lt"],
-    ["prizma 26 hl", "prizma 26 lt"],
-    ["prizma 27 hl", "prizma 27 lt"],
-    ["vectro 1502 hl 2 punch", "vectro 1502 lt"],
-    ["vectro 11003 dk", "vectro 11003 hl"],
-    ["vectro 11051 hl", "vectro 11051 lt"],
-    ["vectro 11080 hl 1", "vectro 11080 hl 2", "vectro 11080 lt"],
-    ["vectro 11083 a", "vectro 11083 b", "vectro 11083 c"],
-    ["vectro 11110 hl", "vectro 11110 lt"],
-    ["waves hl", "waves nero f1"]
-  ];
-
-  const getVariantMatchName = (name: string) =>
-    name
-      .split("--")[0]
-      .replace(/\.[^/.]+$/, "")
-      .replace(/[-_]/g, " ")
-      .replace(/\bR[1-9]\b/gi, "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .toLowerCase();
-
-  const currentVariantMatch = getVariantMatchName(fileNameOnly);
+  const currentVariantMatch = getVariantMatchName(fileNameOnly).toLowerCase();
   
   const matchedGroup = leftSideVariantsGroup.find((group) =>
     group.some((item) => item.toLowerCase() === currentVariantMatch)
@@ -389,118 +340,48 @@ const getPreviewUrl = (
   return null;
 };
 
-/* ─────────────────────────────────────────────
-   Page Component
-───────────────────────────────────────────── */
-/* ─────────────────────────────────────────────
-   Adhesive Info Tabs Component
-───────────────────────────────────────────── */
-function AdhesiveTabs() {
-  const [active, setActive] = React.useState<string | null>("substrate");
-  const tabs = [
-    { id: "substrate", label: "Substrate Preparation" },
-    { id: "instruction", label: "Instruction for Use" },
-    { id: "technical", label: "Technical Information" },
-  ];
-  return (
-    <div className="max-w-[1440px] mx-auto px-6 md:px-14 mb-16">
-      <div className="flex flex-wrap md:flex-nowrap">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActive(active === tab.id ? null : tab.id)}
-            className={`px-6 py-4 md:px-10 md:py-6 text-sm md:text-lg font-black uppercase tracking-widest transition-colors duration-200 ${
-              active === tab.id
-                ? "bg-[#4a2c2a] text-white"
-                : "text-[#4a2c2a] hover:bg-[#4a2c2a]/10"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+const resolveProductImagePath = (imageName: string, categoryStr: string = "", sizeStr: string = "") => {
+  if (!imageName) return "";
+  if (imageName.startsWith("http")) return imageName;
+  if (imageName.startsWith("/tiles/")) return imageName;
+  if (imageName.includes("/")) return `/tiles/${imageName}`;
+  
+  const category = categoryStr.toLowerCase();
+  const size = sizeStr.toLowerCase();
+  const imgName = imageName.toUpperCase();
+  
+  if (category === "accessories" || imgName.includes("TRIM") || imgName.includes("SPACER") || imgName.includes("WEDGE") || imgName.includes("MATTING") || imgName.includes("LEVEL") || imgName.includes("ADHESIVE") || imgName.includes("GLUE")) {
+    if (imgName.includes("TRIM")) return `/tiles/accessories/trim/${imageName}`;
+    if (imgName.includes("SPACER") || imgName.includes("WEDGE")) return `/tiles/accessories/spacer/${imageName}`;
+    if (imgName.includes("MATTING") || imgName.includes("LEVEL")) return `/tiles/accessories/matting/${imageName}`;
+    if (imgName.includes("ADHESIVE") || imgName.includes("GLUE")) return `/tiles/accessories/adhesive/${imageName}`;
+    return `/tiles/accessories/${imageName}`;
+  }
+  
+  if (size && size !== "accessories" && size !== "n/a") {
+    return `/tiles/${size}/${imageName}`;
+  }
+  
+  return `/tiles/${imageName}`;
+};
 
-      {active === "substrate" && (
-        <div className="bg-[#4a2c2a] text-white px-12 py-12">
-          <p className="text-xl leading-relaxed max-w-5xl mb-6">
-            Before starting, all substrates must be clean, dry and strong enough
-            to support the weight of the tiles, tile adhesive and grout. Remove
-            all dust, dirt, oil, grease and other contaminants that may affect
-            adhesion.
-          </p>
-          <p className="text-xl leading-relaxed max-w-5xl mb-6">
-            Absorbent substrates and Gypsum- or calcium-sulphate-based
-            substrates should be primed with Validus Para prior to use. See
-            Validus Para datasheet for correct application according to specific
-            substrates.
-          </p>
-          <p className="text-xl leading-relaxed max-w-5xl mb-6">
-            Adhesive is best applied in a uniform layer, using a notched trowel
-            to comb to a consistent depth, as is appropriate for the type of and
-            size of tiles to be fixed. It can be applied to a maximum bed
-            thickness of 20mm.
-          </p>
-          <p className="text-xl leading-relaxed max-w-5xl mb-6">
-            Ensuring the adhesive is still fresh, bed tiles into the adhesive,
-            ensuring full coverage of adhesive between tile and substrate. Where
-            risk is present, protect the surface from frost until the adhesive
-            is fully set.
-          </p>
-          <p className="text-xl leading-relaxed max-w-5xl">
-            Clean surplus adhesive from the tiles and joints as soon as
-            possible; set adhesive will become increasingly difficult to remove.
-            Clean tools after use with water. Product for professional use only.
-          </p>
-        </div>
-      )}
-      {active === "instruction" && (
-        <div className="bg-[#4a2c2a] text-white px-12 py-12">
-          <p className="text-xl leading-relaxed max-w-5xl mb-6">
-            This product must be in its final position before the mix has
-            started to set. Mix with clean water until you achieve a smooth and
-            lump-free homogeneous consistency.
-          </p>
-          <p className="text-xl leading-relaxed max-w-5xl">
-            Allow the product to stand for about 2 minutes, then remix. The
-            adhesive is now ready for use and must be used within 30 minutes.
-          </p>
-        </div>
-      )}
-      {active === "technical" && (
-        <div className="bg-[#4a2c2a] text-white px-12 py-12">
-          <div className="grid md:grid-cols-2 gap-10 max-w-5xl">
-            <div>
-              <p className="text-xl font-bold mb-2">Grouting:</p>
-              <p className="text-xl leading-relaxed opacity-90">
-                In ideal conditions, grouting can begin after 12 hours. Foot
-                traffic accepted after 24 hours.
-              </p>
-            </div>
-            <div>
-              <p className="text-xl font-bold mb-2">Coverage:</p>
-              <p className="text-xl leading-relaxed opacity-90">
-                Approximately 4–5 m² at 10 mm bed.
-              </p>
-            </div>
-            <div>
-              <p className="text-xl font-bold mb-2">Storage:</p>
-              <p className="text-xl leading-relaxed opacity-90">
-                Store in unopened, sealed packaging in a cool, dry place.
-              </p>
-            </div>
-            <div>
-              <p className="text-xl font-bold mb-2">Shelf Life:</p>
-              <p className="text-xl leading-relaxed opacity-90">
-                Approximately 12 months from the date printed on packaging.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
+const getFormattedImgSrc = (pathStr: string, version?: string) => {
+  if (!pathStr) return "";
+  let cleanPath = pathStr.split("?")[0];
+  if (cleanPath.startsWith("http")) return cleanPath;
+  if (cleanPath.startsWith("/tiles/")) {
+    cleanPath = cleanPath.substring(7);
+  } else if (cleanPath.startsWith("tiles/")) {
+    cleanPath = cleanPath.substring(6);
+  } else if (cleanPath.startsWith("/")) {
+    cleanPath = cleanPath.substring(1);
+  }
+  let url = `/tiles/${cleanPath.split('/').map(s => encodeURIComponent(s)).join('/')}`;
+  if (version) {
+    url += `?v=${version}`;
+  }
+  return url;
+};
 
 export default function ProductDetailPage({
   params,
@@ -508,9 +389,87 @@ export default function ProductDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const resolvedParams = use(params);
-  // slug is the URL-encoded relative tile path, e.g. "600x600%2FALEXA+BEIGE_R1--GLOSS.jpg"
-  const imagePath = decodeURIComponent(resolvedParams.slug); // e.g. "600x600/ALEXA BEIGE_R1--GLOSS.jpg"
-  
+  const rawSlug = resolvedParams.slug;
+  const decodedSlug = decodeURIComponent(rawSlug);
+  const isLegacy = decodedSlug.includes(".") || decodedSlug.includes("/") || decodedSlug.includes("\\");
+
+  const [productData, setProductData] = useState<any>(null);
+  const [loadingProduct, setLoadingProduct] = useState(!isLegacy);
+  const [allTiles, setAllTiles] = useState<string[]>([]);
+  const [previewPaths, setPreviewPaths] = useState<string[]>([]);
+  const [imagePath, setImagePath] = useState(isLegacy ? decodedSlug : "");
+
+  useEffect(() => {
+    import("@/app/actions").then((module) => {
+      module.getActiveTilePaths().then((paths) => setAllTiles(paths));
+      module.getAllPreviewPaths().then((paths) => setPreviewPaths(paths));
+    });
+  }, []);
+
+  // Fetch product from DB if not legacy
+  useEffect(() => {
+    if (!isLegacy) {
+      setLoadingProduct(true);
+      api.get(`/api/products/slug/${decodedSlug}`)
+        .then((res) => {
+          setProductData(res.data);
+          setLoadingProduct(false);
+        })
+        .catch((err) => {
+          console.error("Error fetching product by slug:", err);
+          setLoadingProduct(false);
+        });
+    }
+  }, [decodedSlug, isLegacy]);
+
+  // Fallback lookup in allTiles when backend product not found or server fails
+  useEffect(() => {
+    if (!isLegacy && !productData && !loadingProduct && allTiles.length > 0) {
+      const matched = allTiles.find(t => {
+        if (t.includes("?")) {
+          const q = t.split("?")[1];
+          const up = new URLSearchParams(q);
+          return up.get("slug") === decodedSlug;
+        }
+        return false;
+      });
+      if (matched) {
+        const q = matched.split("?")[1];
+        const up = new URLSearchParams(q);
+        const mockProduct = {
+          name: up.get("name") || "",
+          price: parseFloat(up.get("price") || "12"),
+          discount_price: up.has("discountPrice") ? parseFloat(up.get("discountPrice")!) : undefined,
+          category: up.get("category") || "Accessories",
+          finish: up.get("finish") || "Grey",
+          size: up.get("size") || "20kg",
+          image: matched.split("?")[0]
+        };
+        setProductData(mockProduct);
+      }
+    }
+  }, [decodedSlug, isLegacy, productData, loadingProduct, allTiles]);
+
+  // Resolve imagePath dynamically when productData and allTiles are loaded
+  useEffect(() => {
+    if (!isLegacy && productData) {
+      if (allTiles.length > 0) {
+        const matched = allTiles.find(t => {
+          const tPath = t.split("?")[0];
+          const tFile = tPath.split("/").pop() || tPath;
+          return tFile === productData.image || tPath === productData.image;
+        });
+        if (matched) {
+          setImagePath(matched);
+        } else {
+          setImagePath(productData.image || "");
+        }
+      } else {
+        setImagePath(productData.image || "");
+      }
+    }
+  }, [productData, allTiles, isLegacy]);
+
   const imagePathWithoutQuery = imagePath.split("?")[0];
   const fileNameOnly = imagePathWithoutQuery.split("/").pop() || imagePathWithoutQuery;
   
@@ -529,17 +488,22 @@ export default function ProductDetailPage({
   const isPaveProduct = fileNameOnly.toUpperCase().includes("PAVE");
   const isSaltedProduct = fileNameOnly.toUpperCase().includes("SALTED CONCRETO");
 
-  const displayImagePath = isAurlProduct
-    ? (selectedAurlImage || "600x600/AURL GRIGIO ARCO (605x605) 16mm--MATT.jpeg")
-    : isPaveProduct
-    ? (selectedPaveImage || "600x600/PAVE’ PARIS G (605x605) 16mm.jpeg")
-    : imagePath;
-
-  const finish = getFinish(fileNameOnly);
   const details = getProductDetails(fileNameOnly);
   let category = getCategory(fileNameOnly);
   let displayName = formatFileName(fileNameOnly);
   const isPoster = fileNameOnly.toUpperCase().includes("POSTER");
+
+  const resolvedImagePath = resolveProductImagePath(
+    productData?.image || imagePath,
+    productData?.category || category,
+    productData?.size || dimension
+  );
+
+  const displayImagePath = isAurlProduct
+    ? (selectedAurlImage || "600x600/AURL GRIGIO ARCO (605x605) 16mm--MATT.jpeg")
+    : isPaveProduct
+    ? (selectedPaveImage || "600x600/PAVE’ PARIS G (605x605) 16mm.jpeg")
+    : resolvedImagePath;
   
   let displayOriginalPrice = details.price + 5;
   if (imagePath.includes("?")) {
@@ -558,6 +522,22 @@ export default function ProductDetailPage({
      }
   }
 
+  // Update details with DB product info if available
+  if (!isLegacy && productData) {
+    displayName = productData.name;
+    category = productData.category || category;
+    if (productData.price !== undefined && productData.price !== null) {
+      details.price = productData.price;
+      displayOriginalPrice = productData.price + 5;
+    }
+    if (productData.discount_price !== undefined && productData.discount_price !== null) {
+      details.price = productData.discount_price;
+    }
+    if (productData.size) {
+      dimension = productData.size.toUpperCase();
+    }
+  }
+
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { token } = useAppSelector((state: RootState) => state.auth);
@@ -565,20 +545,20 @@ export default function ProductDetailPage({
 
   const [isAdding, setIsAdding] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  // Wishlist — initialise from localStorage so state persists across visits
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [shareMsg, setShareMsg] = useState("");
   const [imgError, setImgError] = useState(false);
   const [showMoreDesc, setShowMoreDesc] = useState(false);
   const [showMoreAdhesiveFeats, setShowMoreAdhesiveFeats] = useState(false);
-  const [allTiles, setAllTiles] = useState<string[]>([]);
-  const [previewPaths, setPreviewPaths] = useState<string[]>([]);
+  const [quantity, setQuantity] = useState(1);
+  const [imgVersion, setImgVersion] = useState("");
 
   useEffect(() => {
-    import("@/app/actions").then((module) => {
-      module.getAllTilePaths().then((paths) => setAllTiles(paths));
-      module.getAllPreviewPaths().then((paths) => setPreviewPaths(paths));
-    });
+    setImgError(false);
+  }, [displayImagePath]);
+
+  useEffect(() => {
+    setImgVersion(Date.now().toString());
   }, []);
 
   const previewUrl = getPreviewUrl(fileNameOnly, dimension, previewPaths);
@@ -601,7 +581,6 @@ export default function ProductDetailPage({
 
     const paths: string[] = [];
     for (const itemName of group) {
-      // Filter candidates to ensure they belong to the same dimension folder
       const candidates = allTiles.filter((t) => {
         let tDimension = "N/A";
         if (t.includes("?size=")) {
@@ -648,7 +627,7 @@ export default function ProductDetailPage({
     return paths;
   }, [matchedRightGroup, matchedLeftGroup, allTiles, imagePath]);
 
-  // Hydrate wishlist from localStorage after mount (avoids SSR mismatch)
+  // Hydrate wishlist from localStorage
   useEffect(() => {
     try {
       const stored = JSON.parse(
@@ -672,8 +651,8 @@ export default function ProductDetailPage({
         id: Math.random().toString(),
         user_id: "preview_user",
         product_id: fileNameOnly,
-        quantity: 1,
-        unit: "pieces",
+        quantity: details.isAdhesive ? quantity : 1,
+        unit: details.isAdhesive ? "EACH" : "pieces",
         product: {
           id: fileNameOnly,
           name: displayName,
@@ -689,22 +668,17 @@ export default function ProductDetailPage({
 
   const handleAddToCart = async () => {
     if (!token) {
-      const continueWithoutLogin = typeof window !== "undefined" && localStorage.getItem("tb_continue_without_login") === "true";
-      if (!continueWithoutLogin) {
-        const currentPath = window.location.pathname + window.location.search;
-        router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
-        return;
-      }
-      performMockAdd();
-      setIsSuccess(true);
-      setCartOpen(true);
-      setTimeout(() => setIsSuccess(false), 2500);
+      router.push("/login");
       return;
     }
     try {
       setIsAdding(true);
       await dispatch(
-        addToCartAsync({ product_id: fileNameOnly, quantity: 1, unit: "pieces" }),
+        addToCartAsync({
+          product_id: fileNameOnly,
+          quantity: details.isAdhesive ? quantity : 1,
+          unit: details.isAdhesive ? "EACH" : "pieces"
+        }),
       ).unwrap();
       setIsSuccess(true);
       setCartOpen(true);
@@ -719,23 +693,24 @@ export default function ProductDetailPage({
     }
   };
 
-  /* ── Wishlist — toggle and persist to localStorage ── */
+  /* ── Wishlist ── */
   const handleWishlist = () => {
-    const next = !isWishlisted;
-    setIsWishlisted(next);
-    try {
-      const stored = JSON.parse(
-        localStorage.getItem("tb_wishlist") || "[]",
-      ) as string[];
-      const updated = next
-        ? [...new Set([...stored, fileNameOnly])]
-        : stored.filter((id) => id !== fileNameOnly);
-      localStorage.setItem("tb_wishlist", JSON.stringify(updated));
-      // Notify navbar to update wishlist badge count
-      window.dispatchEvent(new Event("wishlist-updated"));
-    } catch {
-      // ignore storage errors
-    }
+    setIsWishlisted((prev) => {
+      const next = !prev;
+      try {
+        const stored = JSON.parse(
+          localStorage.getItem("tb_wishlist") || "[]",
+        ) as string[];
+        const updated = next
+          ? [...new Set([...stored, fileNameOnly])]
+          : stored.filter((id) => id !== fileNameOnly);
+        localStorage.setItem("tb_wishlist", JSON.stringify(updated));
+        window.dispatchEvent(new Event("wishlist-updated"));
+      } catch {
+        // ignore storage errors
+      }
+      return next;
+    });
   };
 
   /* ── Share ── */
@@ -753,6 +728,65 @@ export default function ProductDetailPage({
       setTimeout(() => setShareMsg(""), 2500);
     }
   };
+
+  // Determine finish / color
+  let finish = "";
+  if (productData && productData.finish) {
+    finish = productData.finish;
+  } else if (imagePath.includes("?")) {
+    const urlParams = new URLSearchParams(imagePath.split("?")[1]);
+    if (urlParams.has("finish")) {
+      finish = urlParams.get("finish")!;
+    }
+  }
+  
+  if (!finish) {
+    const tempFinish = getFinish(fileNameOnly);
+    if (tempFinish && tempFinish !== "OTHER") {
+      finish = tempFinish;
+    }
+  }
+
+  // Fallback / override for adhesives/compounds
+  if (finish === "N/A" || finish === "OTHER" || !finish) {
+    const nameUpper = displayName.toUpperCase();
+    const fileUpper = fileNameOnly.toUpperCase();
+    const slugUpper = decodedSlug.toUpperCase();
+    if (nameUpper.includes("GREY") || fileUpper.includes("GREY") || slugUpper.includes("GREY") || fileUpper.includes("ALTUS")) {
+      finish = "Grey";
+    } else if (nameUpper.includes("WHITE") || fileUpper.includes("WHITE") || slugUpper.includes("WHITE")) {
+      finish = "White";
+    }
+  }
+
+  // Uniform Altus description and feature bullets for all adhesives/compounds
+  const adhesiveTitle = "Product Description";
+  const adhesiveDesc = "A fibre reinforced rapid setting cement based self-levelling compound.";
+  const adhesiveBulletsVisible = [
+    "Fibre reinforced",
+    "Flexible, polymer modified"
+  ];
+  const adhesiveBulletsMore = [
+    "Suitable for use over underfloor heating",
+    "Fast curing, accepts foot traffic after 3 hours",
+    "Low VOC emissions",
+    "Can be pump applied",
+    "For interior application only",
+    "Can be applied from 3-50mm",
+    "CT C30 F7",
+    "20kg"
+  ];
+
+  if (loadingProduct) {
+    return (
+      <div className="bg-white min-h-screen pt-20 md:pt-24 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-[#4a2c2a] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-bold uppercase tracking-widest text-[#4a2c2a] animate-pulse">Loading Product Details...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white min-h-screen pt-20 md:pt-24">
@@ -782,9 +816,9 @@ export default function ProductDetailPage({
           ════════════════════════════════ */}
           <div className="w-full lg:w-[55%] xl:w-[58%] lg:sticky lg:top-28">
             <div className="relative w-full aspect-square bg-transparent rounded-sm overflow-hidden flex items-center justify-center p-6 md:p-10 transition-all duration-300">
-              {!imgError ? (
+              {!imgError && displayImagePath ? (
                 <img
-                  src={displayImagePath.startsWith("http") ? displayImagePath.split("?")[0] : `/tiles/${displayImagePath.split("?")[0].split('/').map(s => encodeURIComponent(s)).join('/')}`}
+                  src={getFormattedImgSrc(displayImagePath, imgVersion)}
                   alt={displayName}
                   className="w-full h-full object-contain "
                   onError={() => setImgError(true)}
@@ -796,7 +830,7 @@ export default function ProductDetailPage({
               )}
 
               {/* Finish badge */}
-              {finish && finish !== "OTHER" && (
+              {finish && finish !== "OTHER" && finish !== "N/A" && (
                 <div className="absolute top-5 left-5 bg-white px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.25em] text-[#4a2c2a] shadow-md">
                   {finish}
                 </div>
@@ -807,11 +841,11 @@ export default function ProductDetailPage({
             {!(
               (matchedRightGroup || matchedLeftGroup) &&
               variantPaths.length > 0
-            ) && !isAurlProduct && !isPaveProduct && !isSaltedProduct && (
+            ) && !isAurlProduct && !isPaveProduct && !isSaltedProduct && displayImagePath && (
               <div className="mt-4 flex gap-3">
                 <div className="w-20 h-20 bg-transparent border-2 border-[#4a2c2a] rounded-sm overflow-hidden flex items-center justify-center p-1 flex-shrink-0">
                   <img
-                    src={displayImagePath.startsWith("http") ? displayImagePath.split("?")[0] : `/tiles/${displayImagePath.split("?")[0]}`}
+                    src={getFormattedImgSrc(displayImagePath, imgVersion)}
                     alt="thumb"
                     className="w-full h-full object-contain "
                   />
@@ -885,7 +919,7 @@ export default function ProductDetailPage({
                           className={`relative w-36 h-24 md:w-40 md:h-28 bg-transparent border-[3px] ${isActive ? "border-black" : "border-transparent"} hover:border-black/40 transition-colors overflow-hidden`}
                         >
                           <img
-                            src={path.startsWith("http") ? path.split("?")[0] : `/tiles/${path.split("?")[0]}`}
+                            src={getFormattedImgSrc(path, imgVersion)}
                             alt={vName}
                             
                             className="w-full h-full object-cover  p-1"
@@ -900,8 +934,6 @@ export default function ProductDetailPage({
                 </div>
               </div>
             )}
-
-
           </div>
 
           {/* ════════════════════════════════
@@ -1206,27 +1238,21 @@ export default function ProductDetailPage({
               </div>
             )}
 
-
-
             {details.isAdhesive ? (
               /* ── Adhesive (Validus) Description Layout ── */
               <>
                 <h2 className="text-2xl font-bold text-[#4a2c2a] mb-4">
-                  Tile Adhesive
+                  {adhesiveTitle}
                 </h2>
                 <p className="text-base text-gray-700 leading-relaxed mb-6">
-                  Highly flexible, multi-purpose adhesive, applicable in
-                  thickness up to 20 mm, can be used as flow bed adhesive.
+                  {adhesiveDesc}
                 </p>
 
                 {/* Relocated Feature Bullets with Show More Toggle */}
                 <div className="mb-6 border-b border-gray-100 pb-6">
                   {/* First 2 points always visible */}
                   <ul className="space-y-3 mb-3">
-                    {[
-                      "Grout after 12 hours",
-                      "Light foot traffic after 12 hours"
-                    ].map((feat, i) => (
+                    {adhesiveBulletsVisible.map((feat, i) => (
                       <li
                         key={i}
                         className="flex items-center gap-3 text-base font-semibold text-[#4a2c2a]"
@@ -1244,16 +1270,7 @@ export default function ProductDetailPage({
                     }`}
                   >
                     <ul className="space-y-3">
-                      {[
-                        "Highly flexible & thixotropic",
-                        "Suitable for use with porcelain, ceramic and natural stone tiles",
-                        "Ideal for interior and exterior applications",
-                        "Ideal for use with large format slabs",
-                        "15 mm bed thickness",
-                        "Suitable for use with underfloor heating",
-                        "C2 TE S1",
-                        "20kg"
-                      ].map((feat, i) => (
+                      {adhesiveBulletsMore.map((feat, i) => (
                         <li
                           key={i}
                           className="flex items-center gap-3 text-base font-semibold text-[#4a2c2a]"
@@ -1334,7 +1351,7 @@ export default function ProductDetailPage({
                 {/* Size */}
                 <div className="mb-6">
                   <p className="text-base font-bold text-gray-800 mb-1">
-                    Size: <span className="text-[#4a2c2a]">20kg</span>
+                    Size: <span className="text-[#4a2c2a]">{productData?.size || "20kg"}</span>
                   </p>
                 </div>
               </>
@@ -1434,7 +1451,7 @@ export default function ProductDetailPage({
               /* ── Original Specs Grid (non-accessories) ── */
               <>
                 <div className="grid grid-cols-2 gap-x-8 gap-y-5 mb-10">
-                  {finish && finish !== "OTHER" && (
+                  {finish && finish !== "OTHER" && finish !== "N/A" && (
                     <div>
                       <p className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-400 mb-1">
                         Surface Finish
@@ -1450,7 +1467,8 @@ export default function ProductDetailPage({
                         Dimensions
                       </p>
                       <p className="text-[13px] font-semibold text-[#4a2c2a]">
-                        {dimension.replace("x", " × ")} mm
+                        {dimension.replace("x", " × ")}
+                        {!(dimension.toLowerCase().includes("kg") || dimension.toLowerCase().includes("m")) && " mm"}
                       </p>
                     </div>
                   )}
@@ -1510,45 +1528,112 @@ export default function ProductDetailPage({
                 )}
 
                 {/* ── Add to Cart / Buy Now ── */}
-                <div className="flex flex-col gap-3 mb-8">
-                  {isPoster ? (
-                    <Link
-                      href="/contact"
-                      className="w-full py-4 text-[11px] font-black uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3 bg-[#222] text-white hover:bg-black shadow-lg"
-                    >
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                        <polyline points="22,6 12,13 2,6" />
-                      </svg>
-                      Inquire for Price
-                    </Link>
-                  ) : (
-                    <div className="flex gap-3">
-                      <button
-                        onClick={handleAddToCart}
-                        disabled={isAdding}
-                        className={`flex-1 py-4 text-[11px] font-black uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3
-                          ${isSuccess
-                            ? "bg-green-600 text-white"
-                            : "bg-[#4a2c2a] text-white hover:bg-[#3a1c1a] active:scale-[0.98]"
-                          } disabled:opacity-60 disabled:cursor-not-allowed`}
-                      >
-                        {isAdding ? (
-                          <>
-                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            Adding...
-                          </>
-                        ) : isSuccess ? (
-                          "Added to Cart"
-                        ) : (
-                          "Add to Cart"
-                        )}
-                      </button>
+                {details.isAdhesive ? (
+                  <>
+                    {/* Unit of Measure */}
+                    <div className="mb-6">
+                      <p className="text-base font-bold text-gray-800 mb-3 tracking-wide">
+                        Unit of Measure: <span className="text-[#4a2c2a]">EACH</span>
+                      </p>
+                      <select className="w-full border-2 border-gray-300 rounded-sm px-4 py-3 text-base text-gray-700 bg-white focus:outline-none focus:border-[#4a2c2a] font-medium transition-colors">
+                        <option>EACH</option>
+                      </select>
                     </div>
-                  )}
 
-                  {/* Wishlist + Share */}
-                  <div className="flex gap-3 mt-2">
+                    {/* Quantity & Add to Cart */}
+                    <div className="mb-8">
+                      <p className="text-base font-bold text-gray-800 mb-3 tracking-wide">
+                        Quantity
+                      </p>
+                      <div className="flex gap-4 items-center">
+                        {/* Quantity Selector Counter */}
+                        <div className="flex items-center border-2 border-gray-300 rounded-sm h-[52px] bg-white">
+                          <button
+                            type="button"
+                            onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                            className="px-4 h-full text-gray-600 hover:bg-gray-50 flex items-center justify-center font-bold text-lg select-none"
+                          >
+                            —
+                          </button>
+                          <span className="px-6 text-base font-black text-gray-800 min-w-[50px] text-center select-none">
+                            {quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setQuantity(prev => prev + 1)}
+                            className="px-4 h-full text-gray-600 hover:bg-gray-50 flex items-center justify-center font-bold text-lg select-none"
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        {/* Add to Cart button */}
+                        <button
+                          onClick={handleAddToCart}
+                          disabled={isAdding}
+                          className={`flex-1 h-[52px] text-[11px] font-black uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3 rounded-sm shadow-md
+                            ${isSuccess
+                              ? "bg-green-600 text-white"
+                              : "bg-[#4a2c2a] text-white hover:bg-[#3a1c1a] active:scale-[0.98]"
+                            } disabled:opacity-60 disabled:cursor-not-allowed`}
+                        >
+                          {isAdding ? (
+                            <>
+                              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              Adding...
+                            </>
+                          ) : isSuccess ? (
+                            "Added to Cart"
+                          ) : (
+                            "Add to Cart"
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col gap-3 mb-8">
+                    {isPoster ? (
+                      <Link
+                        href="/contact"
+                        className="w-full py-4 text-[11px] font-black uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3 bg-[#222] text-white hover:bg-black shadow-lg"
+                      >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                          <polyline points="22,6 12,13 2,6" />
+                        </svg>
+                        Inquire for Price
+                      </Link>
+                    ) : (
+                      <div className="flex gap-3">
+                        <button
+                          onClick={handleAddToCart}
+                          disabled={isAdding}
+                          className={`flex-1 py-4 text-[11px] font-black uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3
+                            ${isSuccess
+                              ? "bg-green-600 text-white"
+                              : "bg-[#4a2c2a] text-white hover:bg-[#3a1c1a] active:scale-[0.98]"
+                            } disabled:opacity-60 disabled:cursor-not-allowed`}
+                        >
+                          {isAdding ? (
+                            <>
+                              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              Adding...
+                            </>
+                          ) : isSuccess ? (
+                            "Added to Cart"
+                          ) : (
+                            "Add to Cart"
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Wishlist + Share */}
+                {!isPoster && (
+                  <div className="flex gap-3 mt-2 mb-8">
                     <button
                       onClick={handleWishlist}
                       className={`flex-1 py-3.5 border text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all duration-300
@@ -1566,7 +1651,7 @@ export default function ProductDetailPage({
                       {shareMsg || "Share"}
                     </button>
                   </div>
-                </div>
+                )}
               </>
             ) : (
               <>
@@ -1601,7 +1686,7 @@ export default function ProductDetailPage({
                   productName={displayName}
                   pricePerM2={details.price}
                   size={dimension}
-                  image={displayImagePath.startsWith("http") ? displayImagePath.split("?")[0] : `/tiles/${displayImagePath.split("?")[0]}`}
+                  image={getFormattedImgSrc(displayImagePath, imgVersion)}
                   token={token}
                   router={router}
                 />
@@ -1626,86 +1711,85 @@ export default function ProductDetailPage({
                 </div>
               </>
             )}
-
           </div>
         </div>
-            </main>
+      </main>
 
-{/* Bottom Navigation */}
-<div className="max-w-[1440px] mx-auto px-6 md:px-14 border-t border-gray-100 pt-10 flex items-center justify-between">
-  <Link
-    href="/products"
-    className="inline-flex items-center gap-3 text-[11px] font-black uppercase tracking-widest text-[#4a2c2a] hover:gap-5 transition-all duration-300"
-  >
-    <svg
-      className="w-4 h-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-    >
-      <path d="M19 12H5M12 19l-7-7 7-7" />
-    </svg>
-    Back to Collection
-  </Link>
+      {/* Bottom Navigation */}
+      <div className="max-w-[1440px] mx-auto px-6 md:px-14 border-t border-gray-100 pt-10 flex items-center justify-between">
+        <Link
+          href="/products"
+          className="inline-flex items-center gap-3 text-[11px] font-black uppercase tracking-widest text-[#4a2c2a] hover:gap-5 transition-all duration-300"
+        >
+          <svg
+            className="w-4 h-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          >
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          Back to Collection
+        </Link>
 
-  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-300">
-    Premium · Architectural · Surfaces
-  </p>
-</div>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-300">
+          Premium · Architectural · Surfaces
+        </p>
+      </div>
 
-{/* Horizontal preview image for AURL product */}
-{isAurlProduct && (
-  <div className="max-w-[1440px] mx-auto px-6 md:px-14 pb-16 pt-10">
-    <div className="w-full bg-transparent rounded-sm overflow-hidden flex items-center justify-center p-4">
-      <img
-        src={"/tiles/" + "600x600/AURL GRIGIO ARCO (605x605) 16mm (5)--MATT.jpeg".split('/').map(s => encodeURIComponent(s)).join('/')}
-        alt="AURL GRIGIO ARCO Horizontal Preview"
-        className="w-full h-auto object-contain max-h-[500px]"
-      />
+      {/* Horizontal preview image for AURL product */}
+      {isAurlProduct && (
+        <div className="max-w-[1440px] mx-auto px-6 md:px-14 pb-16 pt-10">
+          <div className="w-full bg-transparent rounded-sm overflow-hidden flex items-center justify-center p-4">
+            <img
+              src={"/tiles/" + "600x600/AURL GRIGIO ARCO (605x605) 16mm (5)--MATT.jpeg".split('/').map(s => encodeURIComponent(s)).join('/')}
+              alt="AURL GRIGIO ARCO Horizontal Preview"
+              className="w-full h-auto object-contain max-h-[500px]"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Horizontal preview image for Pave product */}
+      {isPaveProduct && (
+        <div className="max-w-[1440px] mx-auto px-6 md:px-14 pb-16 pt-10">
+          <div className="w-full bg-transparent rounded-sm overflow-hidden flex items-center justify-center p-4">
+            <img
+              src={"/tiles/" + "600x600/PAVE' PARIS G (605x605) 16mm (1).jpeg".split('/').map(s => encodeURIComponent(s)).join('/')}
+              alt="PAVE PARIS Horizontal Preview"
+              className="w-full h-auto object-contain max-h-[500px]"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Horizontal preview image for Salted Concreto product */}
+      {isSaltedProduct && (
+        <div className="max-w-[1440px] mx-auto px-6 md:px-14 pb-16 pt-10">
+          <div className="w-full bg-transparent rounded-sm overflow-hidden flex items-center justify-center p-4">
+            <img
+              src={"/tiles/" + "600x600/Salted concreto crema 600x900 x 20mm (1).jpeg".split('/').map(s => encodeURIComponent(s)).join('/')}
+              alt="Salted Concreto Horizontal Preview"
+              className="w-full h-auto object-contain max-h-[500px]"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Dynamic Preview Image */}
+      {previewUrl && !isAurlProduct && !isPaveProduct && !isSaltedProduct && (
+        <div className="max-w-[1440px] mx-auto px-6 md:px-14 pb-16 pt-10 border-t border-gray-100">
+          <h3 className="text-2xl font-serif text-[#4a2c2a] mb-8 text-center">Room Preview</h3>
+          <div className="w-full bg-[#fbfbfb] rounded-sm overflow-hidden flex items-center justify-center p-4">
+            <img
+              src={previewUrl}
+              alt={`${displayName} Room Preview`}
+              className="w-full h-auto object-contain max-h-[600px]"
+            />
+          </div>
+        </div>
+      )}
     </div>
-  </div>
-)}
-
-{/* Horizontal preview image for Pave product */}
-{isPaveProduct && (
-  <div className="max-w-[1440px] mx-auto px-6 md:px-14 pb-16 pt-10">
-    <div className="w-full bg-transparent rounded-sm overflow-hidden flex items-center justify-center p-4">
-      <img
-        src={"/tiles/" + "600x600/PAVE' PARIS G (605x605) 16mm (1).jpeg".split('/').map(s => encodeURIComponent(s)).join('/')}
-        alt="PAVE PARIS Horizontal Preview"
-        className="w-full h-auto object-contain max-h-[500px]"
-      />
-    </div>
-  </div>
-)}
-
-{/* Horizontal preview image for Salted Concreto product */}
-{isSaltedProduct && (
-  <div className="max-w-[1440px] mx-auto px-6 md:px-14 pb-16 pt-10">
-    <div className="w-full bg-transparent rounded-sm overflow-hidden flex items-center justify-center p-4">
-      <img
-        src={"/tiles/" + "600x600/Salted concreto crema 600x900 x 20mm (1).jpeg".split('/').map(s => encodeURIComponent(s)).join('/')}
-        alt="Salted Concreto Horizontal Preview"
-        className="w-full h-auto object-contain max-h-[500px]"
-      />
-    </div>
-  </div>
-)}
-
-{/* Dynamic Preview Image */}
-{previewUrl && !isAurlProduct && !isPaveProduct && !isSaltedProduct && (
-  <div className="max-w-[1440px] mx-auto px-6 md:px-14 pb-16 pt-10 border-t border-gray-100">
-    <h3 className="text-2xl font-serif text-[#4a2c2a] mb-8 text-center">Room Preview</h3>
-    <div className="w-full bg-[#fbfbfb] rounded-sm overflow-hidden flex items-center justify-center p-4">
-      <img
-        src={previewUrl}
-        alt={`${displayName} Room Preview`}
-        className="w-full h-auto object-contain max-h-[600px]"
-      />
-    </div>
-  </div>
-)}
-</div>
-);
+  );
 }

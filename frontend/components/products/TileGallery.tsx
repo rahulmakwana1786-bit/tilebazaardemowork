@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import AddToCartButton from "@/components/common/AddToCartButton";
 import { useSearchParams, usePathname } from "next/navigation";
@@ -57,7 +56,7 @@ const getProductDetails = (fileName: string) => {
 };
 
 const getPreviewUrl = (
-  fileNameOnly: string,
+  imagePath: string,
   size: string,
   previewPaths: string[]
 ): string | null => {
@@ -66,16 +65,39 @@ const getPreviewUrl = (
   // Normalize helper
   const normalize = (name: string) => {
     const nameWithoutQuery = name.split("?")[0];
-    return nameWithoutQuery
+    let norm = nameWithoutQuery
       .toLowerCase()
-      .replace(/\.[^/.]+$/, "") // remove extension
-      .split("--")[0]           // remove suffix like --GLOSS
-      .replace(/[-_\s'’]/g, "");  // remove spaces, hyphens, underscores, quotes
+      .replace(/\.(jpg|jpeg|png|webp|avif)/g, "") // remove all extensions
+      .replace(/\.[^/.]+$/, "")                  // remove any remaining extension
+      .split("--")[0]                            // remove suffix like --GLOSS
+      .replace(/[^a-z0-9]/g, "");                // remove all non-alphanumeric characters
+    
+    // Handle spelling inconsistencies
+    norm = norm.replace(/brwon/g, "brown");
+    norm = norm.replace(/earharo/g, "eartharo");
+    return norm;
   };
 
   const targetSize = size.toLowerCase().replace(/\s/g, ""); // e.g. "600x600" or "600x1200"
 
+  const urlWithoutQuery = imagePath.split("?")[0];
+  const fileNameOnly = urlWithoutQuery.split("/").pop() || urlWithoutQuery;
+
   let normalizedFile = normalize(fileNameOnly);
+  
+  if (imagePath.includes("?")) {
+    try {
+      const queryStr = imagePath.split("?")[1];
+      const params = new URLSearchParams(queryStr);
+      const nameParam = params.get("name");
+      if (nameParam) {
+        normalizedFile = normalize(nameParam);
+      }
+    } catch (e) {
+      console.error("Error parsing name param in getPreviewUrl:", e);
+    }
+  }
+
   if (normalizedFile === "lux09r1") {
     normalizedFile = "lux09hl1";
   }
@@ -143,7 +165,6 @@ const getPreviewUrl = (
   // 2. Check leftSideVariantsGroup for combo_tiles
   const leftSideVariantsGroup = [
     ["artovel 018 dk", "artovel 018 hl"],
-    ["earharo hl", "eartharo brwon f1", "earharo brown f1"],
     ["el glitter aqua"],
     ["gl 2509 decor", "gl 2509 lt"],
     ["gl 2511 decor", "gl 2511 lt"],
@@ -221,6 +242,11 @@ const getPreviewUrl = (
 
 export default function TileGallery({ initialImages = [], initialPreviews = [] }: TileGalleryProps) {
   const [previewPaths, setPreviewPaths] = useState<string[]>(initialPreviews);
+  const [imgVersion, setImgVersion] = useState("");
+
+  useEffect(() => {
+    setImgVersion(Date.now().toString());
+  }, []);
 
   useEffect(() => {
     if (initialPreviews.length === 0) {
@@ -296,7 +322,13 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
     const grouped = new Map<string, string[]>();
     baseImages.forEach(img => {
       const fileName = img.split("?")[0].split("/").pop() || img;
-      const baseName = formatFileName(fileName).toLowerCase();
+      let baseName = formatFileName(fileName).toLowerCase();
+      if (img.includes("?")) {
+        const params = new URLSearchParams(img.split("?")[1]);
+        if (params.has("name")) {
+          baseName = params.get("name")!.toLowerCase();
+        }
+      }
       
       let size = "OTHER";
       if (img.includes("?size=")) {
@@ -679,6 +711,7 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
           let displayPrice = details.price;
           let displayOriginalPrice = details.price + 5;
           let category = "";
+          let productSlug = "";
           
           if (imageName.includes("?")) {
              const params = new URLSearchParams(imageName.split("?")[1]);
@@ -694,7 +727,12 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
              if (params.has("category")) {
                category = params.get("category")!;
              }
+             if (params.has("slug")) {
+               productSlug = params.get("slug")!;
+             }
           }
+
+          const detailPageUrl = productSlug ? `/products/${productSlug}` : `/products/${encodeURIComponent(imageName)}`;
 
           // Determine dimensions
           let dimension = "N/A";
@@ -706,19 +744,17 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
           dimension = dimension.toUpperCase();
 
           // Generate preview image
-          const previewUrl = getPreviewUrl(fileNameOnly, dimension, previewPaths);
+          const previewUrl = getPreviewUrl(imageName, dimension, previewPaths);
 
           return (
             <div key={imageName} className="group flex flex-col">
               {/* Boxed Aspect Ratio like the original design */}
-              <Link href={`/products/${encodeURIComponent(imageName)}`} className="relative w-full aspect-[5/4] bg-[#fbfbfb] flex items-center justify-center p-6 mb-5 overflow-hidden group/image cursor-pointer">
+              <Link href={detailPageUrl} className="relative w-full aspect-[5/4] bg-[#fbfbfb] flex items-center justify-center p-6 mb-5 overflow-hidden group/image cursor-pointer">
                 {/* Main Tile Image */}
-                <Image
-                  src={imageName.startsWith("http") ? imageNameWithoutQuery : `/tiles/${imageNameWithoutQuery.split('/').map(s => encodeURIComponent(s)).join('/')}`}
+                <img
+                  src={imageName.startsWith("http") ? imageNameWithoutQuery : `/tiles/${imageNameWithoutQuery.split('/').map(s => encodeURIComponent(s)).join('/')}${imgVersion ? `?v=${imgVersion}` : ""}`}
                   alt={fileNameOnly}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                  className={`object-contain p-8 mix-blend-multiply transition-opacity duration-300 ${previewUrl ? 'group-hover/image:opacity-0' : 'group-hover/image:scale-105'}`}
+                  className={`w-full h-full object-contain p-8 mix-blend-multiply transition-opacity duration-300 ${previewUrl ? 'group-hover/image:opacity-0' : 'group-hover/image:scale-105'}`}
                 />
 
                 {/* Hover Preview Image */}
@@ -746,7 +782,7 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
               </Link>
 
               <div className="flex flex-col flex-grow text-left px-2">
-                <Link href={`/products/${encodeURIComponent(imageName)}`} className="hover:text-[#4a2c2a]/70 transition-colors">
+                <Link href={detailPageUrl} className="hover:text-[#4a2c2a]/70 transition-colors">
                   <h3 className="text-[12px] font-bold uppercase mb-3 text-left">
                     {displayName}
                   </h3>

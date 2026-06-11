@@ -19,7 +19,7 @@ export default function AboutPage() {
 
       {/* 2. Philosophy - Full Width Layout */}
       <section className="py-16 px-4 md:px-10 max-w-[1440px] mx-auto">
-        <div className="w-full max-w-4xl mx-auto">
+        <div className="w-full max-w-8xl mx-auto">
           <h2 className="text-4xl font-serif mb-8 italic">About Tile Bazaar UK</h2>
           <div className="space-y-6 text-md md:text-lg leading-relaxed font-light opacity-90">
             <p>Welcome to Tile Bazaar UK, a leading supplier of premium porcelain tiles, large-format tiles, bathroom tiles, kitchen tiles and outdoor porcelain paving in Slough, Berkshire.

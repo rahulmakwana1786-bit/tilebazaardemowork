@@ -231,7 +231,7 @@ import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
 const getPreviewUrl = (
-  fileNameOnly: string,
+  imagePath: string,
   size: string,
   previewPaths: string[]
 ): string | null => {
@@ -240,16 +240,39 @@ const getPreviewUrl = (
   // Normalize helper
   const normalize = (name: string) => {
     const nameWithoutQuery = name.split("?")[0];
-    return nameWithoutQuery
+    let norm = nameWithoutQuery
       .toLowerCase()
-      .replace(/\.[^/.]+$/, "") // remove extension
-      .split("--")[0]           // remove suffix like --GLOSS
-      .replace(/[-_\s'’]/g, "");  // remove spaces, hyphens, underscores, quotes
+      .replace(/\.(jpg|jpeg|png|webp|avif)/g, "") // remove all extensions
+      .replace(/\.[^/.]+$/, "")                  // remove any remaining extension
+      .split("--")[0]                            // remove suffix like --GLOSS
+      .replace(/[^a-z0-9]/g, "");                // remove all non-alphanumeric characters
+    
+    // Handle spelling inconsistencies
+    norm = norm.replace(/brwon/g, "brown");
+    norm = norm.replace(/earharo/g, "eartharo");
+    return norm;
   };
 
   const targetSize = size.toLowerCase().replace(/\s/g, ""); // e.g. "600x600" or "600x1200"
 
+  const urlWithoutQuery = imagePath.split("?")[0];
+  const fileNameOnly = urlWithoutQuery.split("/").pop() || urlWithoutQuery;
+
   let normalizedFile = normalize(fileNameOnly);
+  
+  if (imagePath.includes("?")) {
+    try {
+      const queryStr = imagePath.split("?")[1];
+      const params = new URLSearchParams(queryStr);
+      const nameParam = params.get("name");
+      if (nameParam) {
+        normalizedFile = normalize(nameParam);
+      }
+    } catch (e) {
+      console.error("Error parsing name param in getPreviewUrl:", e);
+    }
+  }
+
   if (normalizedFile === "lux09r1") {
     normalizedFile = "lux09hl1";
   }
@@ -317,7 +340,6 @@ const getPreviewUrl = (
   // 2. Check leftSideVariantsGroup for combo_tiles
   const leftSideVariantsGroup = [
     ["artovel 018 dk", "artovel 018 hl"],
-    ["earharo hl", "eartharo brwon f1", "earharo brown f1"],
     ["el glitter aqua"],
     ["gl 2509 decor", "gl 2509 lt"],
     ["gl 2511 decor", "gl 2511 lt"],
@@ -503,9 +525,7 @@ export default function TopSellingTiles() {
                 >
                   
                   <div className="relative aspect-[3/4] flex items-center justify-center bg-[#FBFBFB] mb-5 p-6 rounded-[4px] overflow-hidden">
-                    {/* Map fileNameOnly from tile.img */}
                     {(() => {
-                      const fileNameOnly = tile.img.split('/').pop() || tile.img;
 
                       let dimension = "N/A";
                       if (tile.img.includes("?size=")) {
@@ -519,7 +539,7 @@ export default function TopSellingTiles() {
                         dimension = tile.size ? tile.size.replace(" mm", "").trim() : "N/A";
                       }
 
-                      const previewUrl = getPreviewUrl(fileNameOnly, dimension, previewPaths);
+                      const previewUrl = getPreviewUrl(tile.img, dimension, previewPaths);
 
                       return (
                         <>

@@ -103,12 +103,22 @@ export default function ProfilePage() {
               Manage your orders and details
             </p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="text-[10px] font-bold uppercase tracking-widest text-red-600 hover:underline"
-          >
-            Sign Out
-          </button>
+          <div className="flex items-center gap-6">
+            {user.role === "admin" && (
+              <Link
+                href="/admin"
+                className="bg-[#4a2c2a] text-white px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest hover:bg-[#5c3735] transition-colors rounded-sm"
+              >
+                Go to Admin panel
+              </Link>
+            )}
+            <button
+              onClick={handleLogout}
+              className="text-[10px] font-bold uppercase tracking-widest text-red-600 hover:underline"
+            >
+              Sign Out
+            </button>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
