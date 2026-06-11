@@ -754,7 +754,7 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
                 <img
                   src={imageName.startsWith("http") ? imageNameWithoutQuery : `/tiles/${imageNameWithoutQuery.split('/').map(s => encodeURIComponent(s)).join('/')}${imgVersion ? `?v=${imgVersion}` : ""}`}
                   alt={fileNameOnly}
-                  className={`w-full h-full object-contain p-8 mix-blend-multiply transition-opacity duration-300 ${previewUrl ? 'group-hover/image:opacity-0' : 'group-hover/image:scale-105'}`}
+                  className={`w-full h-full object-contain mix-blend-multiply transition-opacity duration-300 ${previewUrl ? 'group-hover/image:opacity-0' : 'group-hover/image:scale-105'}`}
                 />
 
                 {/* Hover Preview Image */}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect, use, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -383,6 +383,53 @@ const getFormattedImgSrc = (pathStr: string, version?: string) => {
   return url;
 };
 
+const parseTrimDetails = (name: string) => {
+  const clean = name.toUpperCase();
+  let depth = "10mm";
+  if (clean.includes("12MM")) depth = "12mm";
+  else if (clean.includes("8MM")) depth = "8mm";
+  
+  let colour = "Chrome";
+  let finish = "Chrome";
+  
+  if (clean.includes("BRUSHED BRASS")) {
+    colour = "Brass";
+    finish = "Brushed Brass";
+  } else if (clean.includes("POLISHED BRASS")) {
+    colour = "Brass";
+    finish = "Polished Brass";
+  } else if (clean.includes("BRUSHED CHROME")) {
+    colour = "Chrome";
+    finish = "Brushed Chrome";
+  } else if (clean.includes("CHROME EFFECT") || (clean.includes("CHROME") && !clean.includes("BRUSHED"))) {
+    colour = "Chrome";
+    finish = "Chrome";
+  } else if (clean.includes("GLOSS BLACK")) {
+    colour = "Black";
+    finish = "Gloss Black";
+  } else if (clean.includes("MATT BLACK")) {
+    colour = "Black";
+    finish = "Matt Black";
+  } else if (clean.includes("POLISHED COPPER")) {
+    colour = "Copper";
+    finish = "Polished Copper";
+  } else if (clean.includes("BASALT")) {
+    colour = "Basalt";
+    finish = "Basalt";
+  } else if (clean.includes("GRANITE")) {
+    colour = "Granite";
+    finish = "Granite";
+  } else if (clean.includes("LIMESTONE")) {
+    colour = "Limestone";
+    finish = "Limestone";
+  } else if (clean.includes("SANDSTONE")) {
+    colour = "Sandstone";
+    finish = "Sandstone";
+  }
+  
+  return { colour, depth, finish };
+};
+
 export default function ProductDetailPage({
   params,
 }: {
@@ -563,6 +610,61 @@ export default function ProductDetailPage({
 
   const previewUrl = getPreviewUrl(fileNameOnly, dimension, previewPaths);
 
+  const trimVariants = useMemo(() => {
+    if (allTiles.length === 0) return [];
+    const trimPaths = allTiles.filter(t => t.toUpperCase().includes("TRIM"));
+    return trimPaths.map(t => {
+      const q = t.split("?")[1];
+      const params = new URLSearchParams(q || "");
+      const name = params.get("name") || t.split('/').pop() || "";
+      const slug = params.get("slug") || encodeURIComponent(t);
+      const parsed = parseTrimDetails(name);
+      return {
+        ...parsed,
+        slug: slug,
+        path: t.split("?")[0]
+      };
+    });
+  }, [allTiles]);
+
+  const currentTrim = useMemo(() => {
+    if (!details.isTrim) return null;
+    return parseTrimDetails(displayName);
+  }, [details.isTrim, displayName]);
+
+  const availableColours = useMemo(() => {
+    const colours = new Set(trimVariants.map(v => v.colour));
+    return Array.from(colours);
+  }, [trimVariants]);
+
+  const availableDepths = useMemo(() => {
+    const depths = new Set(trimVariants.map(v => v.depth));
+    return Array.from(depths);
+  }, [trimVariants]);
+
+  const availableFinishes = useMemo(() => {
+    if (!currentTrim) return [];
+    const finishes = trimVariants
+      .filter(v => v.colour === currentTrim.colour)
+      .map(v => v.finish);
+    return Array.from(new Set(finishes));
+  }, [trimVariants, currentTrim]);
+
+  const handleTrimChange = (field: "colour" | "depth" | "finish", value: string) => {
+    if (!currentTrim) return;
+    let matched = trimVariants.find(v => {
+      if (field === "colour") return v.colour === value;
+      if (field === "depth") return v.colour === currentTrim.colour && v.depth === value && v.finish === currentTrim.finish;
+      if (field === "finish") return v.colour === currentTrim.colour && v.depth === currentTrim.depth && v.finish === value;
+      return false;
+    });
+    if (!matched && field === "colour") matched = trimVariants.find(v => v.colour === value);
+    if (!matched && field === "depth") matched = trimVariants.find(v => v.colour === currentTrim.colour && v.depth === value);
+    if (matched) {
+      router.push(`/products/${matched.slug}`);
+    }
+  };
+
   const currentNameLower = getVariantMatchName(fileNameOnly).toLowerCase();
   const matchedRightGroup = rightSideVariantsGroup.find((g) =>
     g.includes(currentNameLower),
@@ -651,8 +753,8 @@ export default function ProductDetailPage({
         id: Math.random().toString(),
         user_id: "preview_user",
         product_id: fileNameOnly,
-        quantity: details.isAdhesive ? quantity : 1,
-        unit: details.isAdhesive ? "EACH" : "pieces",
+        quantity: (details.isAdhesive || details.isTrim) ? quantity : 1,
+        unit: (details.isAdhesive || details.isTrim) ? "EACH" : "pieces",
         product: {
           id: fileNameOnly,
           name: displayName,
@@ -676,8 +778,8 @@ export default function ProductDetailPage({
       await dispatch(
         addToCartAsync({
           product_id: fileNameOnly,
-          quantity: details.isAdhesive ? quantity : 1,
-          unit: details.isAdhesive ? "EACH" : "pieces"
+          quantity: (details.isAdhesive || details.isTrim) ? quantity : 1,
+          unit: (details.isAdhesive || details.isTrim) ? "EACH" : "pieces"
         }),
       ).unwrap();
       setIsSuccess(true);
@@ -1393,17 +1495,15 @@ export default function ProductDetailPage({
                     Product Description
                   </h3>
                   <p className="text-base text-gray-700 leading-relaxed mb-4">
-                    A coated effect Aluminium profile for the protection and
-                    neat finishing of tiled corners and edges. Suitable for use
-                    on walls and floors. Provides a decorative finish.
+                    An Aluminium profile for protecting and finishing tiled corners and edges.
                   </p>
                   <div
                     className={`transition-all duration-300 overflow-hidden ${showMoreDesc ? "max-h-40 opacity-100 mb-5" : "max-h-0 opacity-0 mb-0"}`}
                   >
                     <ul className="list-disc list-inside text-base text-[#4a2c2a]/70 space-y-2 font-medium">
                       <li>Provides a decorative finish</li>
-                      <li>Suitable for walls and floors</li>
-                      <li>Aluminium profile — durable &amp; lightweight</li>
+                      <li>Suitable for use where tile is bordered by carpet and expansion joints</li>
+                      <li>Length: 2.5m</li>
                     </ul>
                   </div>
                   <button
@@ -1434,17 +1534,6 @@ export default function ProductDetailPage({
                     </span>
                   </div>
                   <div className="mt-3 w-full h-1.5 bg-green-500 rounded-full" />
-                </div>
-
-                {/* Unit of Measure */}
-                <div className="mb-6">
-                  <p className="text-base font-bold text-gray-800 mb-3 tracking-wide">
-                    Unit of Measure:{" "}
-                    <span className="text-[#4a2c2a]">EACH</span>
-                  </p>
-                  <select className="w-full border-2 border-gray-300 rounded-sm px-4 py-3 text-base text-gray-700 bg-white focus:outline-none focus:border-[#4a2c2a] font-medium transition-colors">
-                    <option>EACH</option>
-                  </select>
                 </div>
               </>
             ) : (
