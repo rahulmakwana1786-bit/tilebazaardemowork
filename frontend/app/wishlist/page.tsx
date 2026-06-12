@@ -152,7 +152,7 @@ export default function WishlistPage() {
     if (allTiles.length === 0) return [];
     return wishlistSlugs.map((slug) => {
       // Find matching path
-      const fullPath = allTiles.find((t) => (t.split("/").pop() || t) === slug);
+      const fullPath = allTiles.find((t) => (t.split("?")[0].split("/").pop() || t) === slug);
       if (!fullPath) return null;
 
       const fileNameOnly = slug;

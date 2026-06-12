@@ -463,7 +463,9 @@ export default function ProductDetailPage({
           setLoadingProduct(false);
         })
         .catch((err) => {
-          console.error("Error fetching product by slug:", err);
+          if (err.message !== "Network Error") {
+            console.warn("Could not fetch product by slug from database:", err.message || err);
+          }
           setLoadingProduct(false);
         });
     }
@@ -472,7 +474,8 @@ export default function ProductDetailPage({
   // Fallback lookup in allTiles when backend product not found or server fails
   useEffect(() => {
     if (!isLegacy && !productData && !loadingProduct && allTiles.length > 0) {
-      const matched = allTiles.find(t => {
+      // 1. Try exact slug match
+      let matched = allTiles.find(t => {
         if (t.includes("?")) {
           const q = t.split("?")[1];
           const up = new URLSearchParams(q);
@@ -480,6 +483,42 @@ export default function ProductDetailPage({
         }
         return false;
       });
+
+      // 2. Try parsing slug to match name and size
+      if (!matched) {
+        const lowerSlug = decodedSlug.toLowerCase();
+        let parsedSize = "";
+        if (lowerSlug.includes("600x1200")) parsedSize = "600x1200";
+        else if (lowerSlug.includes("600x600")) parsedSize = "600x600";
+
+        const cleanedSlug = lowerSlug
+          .replace("600x1200", "")
+          .replace("600x600", "")
+          .replace("glossy", "")
+          .replace("matt", "")
+          .replace(/[-_\s]/g, "");
+
+        matched = allTiles.find(t => {
+          const tPath = t.split("?")[0];
+          const tFile = tPath.split("/").pop() || tPath;
+          const tSizeFolder = tPath.split("/")[0] || "";
+
+          const q = t.split("?")[1] || "";
+          const up = new URLSearchParams(q);
+
+          const rawName = up.get("name") || tFile.split("--")[0].replace(/\.[^/.]+$/, "");
+          const tNameNormalized = rawName.toLowerCase().replace(/[^a-z0-9]/g, "").trim();
+
+          const rawSize = up.get("size") || tSizeFolder;
+          const tSizeNormalized = rawSize.toLowerCase().replace(/[^a-z0-9]/g, "").trim();
+
+          const nameMatches = tNameNormalized.includes(cleanedSlug) || cleanedSlug.includes(tNameNormalized);
+          const sizeMatches = parsedSize ? tSizeNormalized === parsedSize : true;
+
+          return nameMatches && sizeMatches;
+        });
+      }
+
       if (matched) {
         const q = matched.split("?")[1];
         const up = new URLSearchParams(q);
@@ -501,13 +540,73 @@ export default function ProductDetailPage({
   useEffect(() => {
     if (!isLegacy && productData) {
       if (allTiles.length > 0) {
-        const matched = allTiles.find(t => {
-          const tPath = t.split("?")[0];
-          const tFile = tPath.split("/").pop() || tPath;
-          return tFile === productData.image || tPath === productData.image;
+        const targetSlug = (productData.slug || "").toLowerCase().trim();
+        const targetName = (productData.name || "").toLowerCase().replace(/[^a-z0-9]/g, "").trim();
+        const targetSize = (productData.size || "").toLowerCase().replace(/[^a-z0-9]/g, "").trim();
+
+        // 1. Try slug match
+        let foundTile = allTiles.find(t => {
+          if (!t.includes("?")) return false;
+          const q = t.split("?")[1];
+          const up = new URLSearchParams(q);
+          const s = (up.get("slug") || "").toLowerCase().trim();
+          return s && s === targetSlug;
         });
-        if (matched) {
-          setImagePath(matched);
+
+        // 2. Try name and size match
+        if (!foundTile && targetName) {
+          foundTile = allTiles.find(t => {
+            const tPath = t.split("?")[0];
+            const tFile = tPath.split("/").pop() || tPath;
+            const tSizeFolder = tPath.split("/")[0] || "";
+
+            const q = t.split("?")[1] || "";
+            const up = new URLSearchParams(q);
+
+            const rawName = up.get("name") || tFile.split("--")[0].replace(/\.[^/.]+$/, "");
+            const tNameNormalized = rawName.toLowerCase().replace(/[^a-z0-9]/g, "").trim();
+
+            const rawSize = up.get("size") || tSizeFolder;
+            const tSizeNormalized = rawSize.toLowerCase().replace(/[^a-z0-9]/g, "").trim();
+
+            return tNameNormalized === targetName && tSizeNormalized === targetSize;
+          });
+        }
+
+        // 3. Try filename and size match
+        if (!foundTile && productData.image) {
+          const dbImgFilename = (productData.image.split("/").pop() || "").split("?")[0].toLowerCase().trim();
+
+          foundTile = allTiles.find(t => {
+            const tPath = t.split("?")[0];
+            const tFile = (tPath.split("/").pop() || "").toLowerCase().trim();
+            const tSizeFolder = tPath.split("/")[0] || "";
+
+            const matchesFilename = tFile === dbImgFilename || tPath.toLowerCase() === dbImgFilename;
+            if (!matchesFilename) return false;
+
+            if (targetSize) {
+              const q = t.split("?")[1] || "";
+              const up = new URLSearchParams(q);
+              const tSize = (up.get("size") || tSizeFolder)
+                .toLowerCase().replace(/[^a-z0-9]/g, "").trim();
+              return tSize === targetSize;
+            }
+            return true;
+          });
+        }
+
+        // 4. Last resort: match just productData.image filename
+        if (!foundTile) {
+          foundTile = allTiles.find(t => {
+            const tPath = t.split("?")[0];
+            const tFile = tPath.split("/").pop() || tPath;
+            return tFile === productData.image || tPath === productData.image;
+          });
+        }
+
+        if (foundTile) {
+          setImagePath(foundTile);
         } else {
           setImagePath(productData.image || "");
         }

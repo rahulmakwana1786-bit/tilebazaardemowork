@@ -189,6 +189,16 @@ function mapLocalPathToUrl(localPath: string, products: any[] = []): string[] {
       return false;
     }
     if (p.image === basename) {
+      const localSize = getSize(localPath, basename);
+      const prodSize = p.size;
+      if (localSize && prodSize) {
+        const normLocal = localSize.toLowerCase().replace(/[^a-z0-9]/g, "");
+        const normProd = prodSize.toLowerCase().replace(/[^a-z0-9]/g, "");
+        if (normLocal === normProd) {
+          return true;
+        }
+        return false;
+      }
       return true;
     }
     const nameMatches = p.name.toLowerCase() === baseStr || p.name.toLowerCase() === cleanStr;
