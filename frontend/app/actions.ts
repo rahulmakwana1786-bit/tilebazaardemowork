@@ -336,6 +336,21 @@ export async function getAllPreviewPaths(): Promise<string[]> {
     console.error("Error reading previews directory:", e);
   }
 
+  // Fallback to static previews-list.json if allFiles is empty (e.g. on Vercel serverless)
+  if (allFiles.length === 0) {
+    try {
+      const previewsListPath = path.join(process.cwd(), "app/previews-list.json");
+      if (fs.existsSync(previewsListPath)) {
+        const data = fs.readFileSync(previewsListPath, "utf-8");
+        const list = JSON.parse(data);
+        const mtime = Date.now();
+        allFiles = list.map((p: string) => `${p}?t=${mtime}`);
+      }
+    } catch (err) {
+      console.error("Failed to read static previews list fallback:", err);
+    }
+  }
+
   return allFiles;
 }
 
