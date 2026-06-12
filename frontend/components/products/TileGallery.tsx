@@ -282,9 +282,22 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
+  const decodedInitialImages = useMemo(() => {
+    return initialImages.map((img) => {
+      if (img.includes("%3F") || img.includes("%2F")) {
+        try {
+          return decodeURIComponent(img);
+        } catch {
+          // ignore
+        }
+      }
+      return img;
+    });
+  }, [initialImages]);
+
   const deduplicatedImages = useMemo(() => {
     // First, filter out the variant/grid images that shouldn't be in the gallery at all
-    const baseImages = initialImages.filter((img) => {
+    const baseImages = decodedInitialImages.filter((img) => {
       const fileName = img.split("/").pop() || img;
       const upperName = fileName.toUpperCase();
       const finish = getFinish(fileName);
@@ -362,7 +375,7 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
       }
     });
     return result;
-  }, [initialImages]);
+  }, [decodedInitialImages]);
 
   const { uniqueSizes, uniqueFinishes } = useMemo(() => {
     const sizes = new Set<string>();
