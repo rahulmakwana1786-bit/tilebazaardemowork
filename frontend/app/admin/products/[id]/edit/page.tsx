@@ -329,6 +329,8 @@ const getProductImagePath = (image: string | undefined | null, category?: string
   if (!folderSize) {
     if (upper.includes("600X1200")) {
       folderSize = "600x1200";
+    } else if (upper.includes("300X600")) {
+      folderSize = "300x600";
     } else {
       folderSize = "600x600"; // default size
     }

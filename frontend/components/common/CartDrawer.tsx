@@ -214,7 +214,8 @@ export default function CartDrawer({
     const isAcc = checkIsAccessory(item.product);
     if (isAcc) return acc + item.quantity;
     const is600x600 = (item.product?.size || "").toLowerCase().includes("600x600");
-    const piecesPerBox = is600x600 ? 4 : 2;
+    const is300x600 = (item.product?.size || "").toLowerCase().includes("300x600");
+    const piecesPerBox = is600x600 ? 4 : (is300x600 ? 8 : 2);
     const boxes = item.unit === "pieces" ? item.quantity / piecesPerBox : item.quantity;
     return acc + boxes;
   }, 0);
@@ -225,7 +226,8 @@ export default function CartDrawer({
       return acc + getProductPrice(item.product) * item.quantity;
     }
     const is600x600 = (item.product?.size || "").toLowerCase().includes("600x600");
-    const piecesPerBox = is600x600 ? 4 : 2;
+    const is300x600 = (item.product?.size || "").toLowerCase().includes("300x600");
+    const piecesPerBox = is600x600 ? 4 : (is300x600 ? 8 : 2);
     const coverage = item.unit === "pieces"
       ? item.quantity * (1.44 / piecesPerBox)
       : item.quantity * 1.44;
@@ -238,7 +240,8 @@ export default function CartDrawer({
     if (isAcc) return acc;
     
     const is600x600 = (product?.size || "").toLowerCase().includes("600x600");
-    const piecesPerBox = is600x600 ? 4 : 2;
+    const is300x600 = (product?.size || "").toLowerCase().includes("300x600");
+    const piecesPerBox = is600x600 ? 4 : (is300x600 ? 8 : 2);
     const boxes = item.unit === "pieces" ? item.quantity / piecesPerBox : item.quantity;
     
     return acc + (boxes * 29);
@@ -407,7 +410,8 @@ export default function CartDrawer({
                       {(() => {
                         if (checkIsAccessory(product)) return "";
                         const is600x600 = (product.size || "").toLowerCase().includes("600x600");
-                        const piecesPerBox = is600x600 ? 4 : 2;
+                        const is300x600 = (product.size || "").toLowerCase().includes("300x600");
+                        const piecesPerBox = is600x600 ? 4 : (is300x600 ? 8 : 2);
                         if (item.unit === "pieces") {
                           const sqm = item.quantity * (1.44 / piecesPerBox);
                           return ` • ${product.size || "600x1200"} • ${sqm.toFixed(2)} SQM (${item.quantity} pcs)`;

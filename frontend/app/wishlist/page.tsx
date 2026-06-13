@@ -11,7 +11,7 @@ import { useCart } from "@/context/CartContext";
 import { IoTrashOutline } from "react-icons/io5";
 import { FiShoppingCart, FiChevronLeft } from "react-icons/fi";
 import { Heart } from "lucide-react";
-import { getAllTilePaths } from "@/app/actions";
+import { getActiveTilePaths } from "@/app/actions";
 
 type WishlistProduct = {
   id: string;
@@ -82,7 +82,7 @@ export default function WishlistPage() {
     } catch {
       // ignore
     }
-    getAllTilePaths().then((paths) => {
+    getActiveTilePaths().then((paths) => {
       setAllTiles(paths);
       setLoading(false);
     });

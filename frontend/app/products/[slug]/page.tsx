@@ -540,7 +540,7 @@ export default function ProductDetailPage({
 
   useEffect(() => {
     import("@/app/actions").then((module) => {
-      module.getAllTilePaths().then((paths) => setAllTiles(paths));
+      module.getActiveTilePaths().then((paths) => setAllTiles(paths));
       module.getAllPreviewPaths().then((paths) => setPreviewPaths(paths));
     });
   }, []);
@@ -814,7 +814,65 @@ export default function ProductDetailPage({
     g.includes(currentNameLower),
   );
 
+  const currentKey = useMemo(() => {
+    const getVariantKey = (fname: string): string | null => {
+      const clean = fname.split("--")[0].replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ").trim().toLowerCase();
+      const words = clean.split(/\s+/);
+      
+      const numIdx = words.findIndex(w => /\d+/.test(w));
+      if (numIdx !== -1 && numIdx + 1 < words.length) {
+        const numberPart = words[numIdx].match(/\d+/)?.[0];
+        const nextWord = words[numIdx + 1];
+        if (numberPart && nextWord) {
+          return `${numberPart}_${nextWord}`;
+        }
+      }
+      return null;
+    };
+    return getVariantKey(fileNameOnly);
+  }, [fileNameOnly]);
+
+  const matchedDynamicGroup = useMemo(() => {
+    if (matchedRightGroup || matchedLeftGroup || !currentKey || allTiles.length === 0) return null;
+
+    const currentDimension = imagePath.split("/")[0];
+    const getVariantKey = (fname: string): string | null => {
+      const clean = fname.split("--")[0].replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ").trim().toLowerCase();
+      const words = clean.split(/\s+/);
+      
+      const numIdx = words.findIndex(w => /\d+/.test(w));
+      if (numIdx !== -1 && numIdx + 1 < words.length) {
+        const numberPart = words[numIdx].match(/\d+/)?.[0];
+        const nextWord = words[numIdx + 1];
+        if (numberPart && nextWord) {
+          return `${numberPart}_${nextWord}`;
+        }
+      }
+      return null;
+    };
+
+    // Find all other tiles in the same size folder that match the key
+    const matched = allTiles.filter(t => {
+      let tDimension = "N/A";
+      if (t.includes("?size=")) {
+        tDimension = t.split("?size=")[1].split("&")[0];
+      } else if (!t.startsWith("http")) {
+        tDimension = t.split("/")[0];
+      }
+      if (tDimension !== currentDimension) return false;
+
+      const tFileName = t.split("?")[0].split("/").pop() || t;
+      return getVariantKey(tFileName) === currentKey;
+    });
+
+    return matched.length > 1 ? matched.sort() : null;
+  }, [matchedRightGroup, matchedLeftGroup, currentKey, allTiles, imagePath]);
+
   const variantPaths = React.useMemo(() => {
+    if (matchedDynamicGroup) {
+      return matchedDynamicGroup;
+    }
+
     const group = matchedRightGroup || matchedLeftGroup;
     if (!group || allTiles.length === 0) return [];
 
@@ -828,7 +886,7 @@ export default function ProductDetailPage({
       const candidates = allTiles.filter((t) => {
         let tDimension = "N/A";
         if (t.includes("?size=")) {
-          tDimension = t.split("?size=")[1];
+          tDimension = t.split("?size=")[1].split("&")[0];
         } else if (!t.startsWith("http")) {
           tDimension = t.split("/")[0];
         }
@@ -1401,7 +1459,7 @@ export default function ProductDetailPage({
               </div>
             )}
 
-            {matchedRightGroup && variantPaths.length > 0 && (
+            {(matchedRightGroup || matchedDynamicGroup) && variantPaths.length > 0 && (
               <div className="mb-10 pb-10 border-b border-gray-100">
                 <p className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-500 mb-6">
                   Available Variants
@@ -1707,7 +1765,7 @@ export default function ProductDetailPage({
             )}
 
             {/* ── Pricing & Cart Section ── */}
-            {details.isAccessory || isPoster || !(dimension.toLowerCase().includes("600x600") || dimension.toLowerCase().includes("600x1200")) ? (
+            {details.isAccessory || isPoster || !(dimension.toLowerCase().includes("600x600") || dimension.toLowerCase().includes("600x1200") || dimension.toLowerCase().includes("300x600")) ? (
               <>
                 {/* ── Old Pricing ── */}
                 {isPoster ? (

@@ -13,7 +13,7 @@ interface TileGalleryProps {
 
 const getFinish = (fileName: string) => {
   const name = fileName.toUpperCase();
-  if (name.includes("--GLOSS")) return "GLOSSY";
+  if (name.includes("--GLOSSY") || name.includes("--GLOSS")) return "GLOSSY";
   if (name.includes("--MATT") && !name.includes("--MATTING")) return "MATT";
   if (name.includes("PAVE") || name.includes("SALTED CONCRETO")) return "MATT";
   if (name.includes("--CARVING")) return "CARVING";

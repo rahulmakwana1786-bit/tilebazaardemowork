@@ -121,7 +121,7 @@ export default function AdminProductsPage() {
 
   // Derived filter options
   const finishes = ["All", ...Array.from(new Set(products.map(p => p.finish).filter(Boolean)))];
-  const sizes = ["All", "600x600", "600x1200", "Accessories"];
+  const sizes = ["All", "600x600", "600x1200", "300x600", "Accessories"];
 
   useEffect(() => {
     setCurrentPage(1);

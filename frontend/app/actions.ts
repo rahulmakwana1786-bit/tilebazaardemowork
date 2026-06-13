@@ -90,7 +90,7 @@ function getFinish(fileName: string): string {
     if (name.includes("ALTUS")) return "Grey";
     return "N/A";
   }
-  if (name.includes("--GLOSS")) return "GLOSSY";
+  if (name.includes("--GLOSSY") || name.includes("--GLOSS")) return "GLOSSY";
   if (name.includes("--MATT") && !name.includes("--MATTING")) return "MATT";
   if (name.includes("PAVE") || name.includes("SALTED CONCRETO")) return "MATT";
   if (name.includes("--CARVING")) return "CARVING";
@@ -272,7 +272,48 @@ export async function getActiveTilePaths(): Promise<string[]> {
     const response = await fetch(`${apiUrl}/api/products`, { cache: 'no-store' });
     
     if (response.ok) {
-      const products = await response.json();
+      let products = await response.json();
+
+      // Check for local files that are missing from products list
+      const missingFiles: string[] = [];
+      localFiles.forEach(localPath => {
+        const basename = localPath.split('/').pop() || localPath;
+        const matched = products.find((p: any) => {
+          if (p.image && p.image.toLowerCase() === basename.toLowerCase()) {
+            const localSize = getSize(localPath, basename);
+            const prodSize = p.size;
+            if (localSize && prodSize) {
+              const normLocal = localSize.toLowerCase().replace(/[^a-z0-9]/g, "");
+              const normProd = prodSize.toLowerCase().replace(/[^a-z0-9]/g, "");
+              if (normLocal === normProd) return true;
+            }
+          }
+          return false;
+        });
+        if (!matched) {
+          missingFiles.push(localPath);
+        }
+      });
+
+      if (missingFiles.length > 0) {
+        try {
+          console.log(`Syncing ${missingFiles.length} missing local products to backend...`);
+          const syncResponse = await fetch(`${apiUrl}/api/products/sync-local`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paths: missingFiles })
+          });
+          if (syncResponse.ok) {
+            const refetchedResponse = await fetch(`${apiUrl}/api/products`, { cache: 'no-store' });
+            if (refetchedResponse.ok) {
+              products = await refetchedResponse.json();
+            }
+          }
+        } catch (syncError) {
+          console.error("Error syncing missing local products to backend:", syncError);
+        }
+      }
+
       allFiles = localFiles.flatMap(localPath => mapLocalPathToUrl(localPath, products));
 
       // Add any products that have external image URLs (e.g. from Admin upload)

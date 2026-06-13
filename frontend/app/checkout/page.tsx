@@ -114,7 +114,8 @@ export default function CheckoutPage() {
     const isAcc = checkIsAccessory(product);
     if (isAcc) return acc;
     const is600x600 = (product?.size || "").toLowerCase().includes("600x600");
-    const piecesPerBox = is600x600 ? 4 : 2;
+    const is300x600 = (product?.size || "").toLowerCase().includes("300x600");
+    const piecesPerBox = is600x600 ? 4 : (is300x600 ? 8 : 2);
     const boxes = item.unit === "pieces" ? item.quantity / piecesPerBox : item.quantity;
     return acc + (boxes * 29);
   }, 0);
@@ -175,7 +176,8 @@ export default function CheckoutPage() {
       return acc + getProductPrice(item.product) * item.quantity;
     }
     const is600x600 = (item.product?.size || "").toLowerCase().includes("600x600");
-    const piecesPerBox = is600x600 ? 4 : 2;
+    const is300x600 = (item.product?.size || "").toLowerCase().includes("300x600");
+    const piecesPerBox = is600x600 ? 4 : (is300x600 ? 8 : 2);
     const coverage = item.unit === "pieces"
       ? item.quantity * (1.44 / piecesPerBox)
       : item.quantity * 1.44;
@@ -457,7 +459,8 @@ export default function CheckoutPage() {
                       if (!product) return null;
                       const isAcc = checkIsAccessory(product);
                       const is600x600 = (product?.size || "").toLowerCase().includes("600x600");
-                      const piecesPerBox = is600x600 ? 4 : 2;
+                      const is300x600 = (product?.size || "").toLowerCase().includes("300x600");
+                      const piecesPerBox = is600x600 ? 4 : (is300x600 ? 8 : 2);
                       const coverage = isAcc 
                         ? item.quantity 
                         : item.unit === "pieces"
