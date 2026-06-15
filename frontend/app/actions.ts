@@ -107,9 +107,13 @@ function getSize(localPath: string, fileName: string): string {
   }
   if (localPath.includes("/")) {
     const parts = localPath.split("/");
-    const sizeFolder = parts[0];
-    if (sizeFolder.includes("x")) {
+    const sizeFolder = parts.find(p => p.toLowerCase().includes("x") && /\d+x\d+/i.test(p));
+    if (sizeFolder) {
       return sizeFolder;
+    }
+    const sizeFolderPart = parts[0];
+    if (sizeFolderPart.includes("x")) {
+      return sizeFolderPart;
     }
   }
   const name = fileName.toUpperCase();
@@ -126,6 +130,9 @@ function getSize(localPath: string, fileName: string): string {
   }
   if (name.includes("20KG")) {
     return "20kg";
+  }
+  if (localPath.includes("comingsoon")) {
+    return "600x1200";
   }
   return "accessories";
 }
@@ -264,11 +271,13 @@ function mapLocalPathToUrl(localPath: string, products: any[] = []): string[] {
 
 export async function getActiveTilePaths(): Promise<string[]> {
   const localFiles = await getAllTilePaths();
+  const comingSoonFiles = await getAllComingSoonPaths();
   let allFiles: string[] = [];
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tilebazaardemowork-production.up.railway.app';
 
   try {
     // Fetch active products from backend
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tilebazaardemowork-production.up.railway.app';
     const response = await fetch(`${apiUrl}/api/products`, { cache: 'no-store' });
     
     if (response.ok) {
@@ -338,9 +347,69 @@ export async function getActiveTilePaths(): Promise<string[]> {
       console.warn("Failed to fetch products from backend, falling back to all local files.");
       allFiles = localFiles.flatMap(localPath => mapLocalPathToUrl(localPath, []));
     }
-  } catch (e) {
-    console.error("Error fetching active tiles, falling back to local files:", e);
+  } catch (e: any) {
+    const isConnRefused = e?.cause?.code === 'ECONNREFUSED' || e?.message?.includes('ECONNREFUSED') || String(e).includes('ECONNREFUSED');
+    if (isConnRefused) {
+      console.warn(`\n[TileBazaar Warning] Backend server is not running or is unreachable at ${apiUrl}.`);
+      console.warn(`To start the backend, run 'npm run dev' inside the '/backend' directory.\n`);
+    } else {
+      console.error("Error fetching active tiles, falling back to local files:", e);
+    }
     allFiles = localFiles.flatMap(localPath => mapLocalPathToUrl(localPath, []));
+  }
+
+  // Map and append Coming Soon files
+  const comingSoonUrls = comingSoonFiles.flatMap(localPath => {
+    const basename = localPath.split('/').pop() || localPath;
+    const cleanName = formatFileName(basename);
+    const fallbackSlug = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const fallbackCategory = "Coming Soon";
+    const size = getSize(localPath, basename);
+    const finish = getFinish(basename);
+
+    let url = `${localPath}?name=${encodeURIComponent(cleanName)}&price=0&slug=${fallbackSlug}&category=${encodeURIComponent(fallbackCategory)}`;
+    if (size && size !== "accessories") {
+      url += `&size=${encodeURIComponent(size)}`;
+    }
+    if (finish && finish !== "OTHER" && finish !== "N/A") {
+      url += `&finish=${encodeURIComponent(finish)}`;
+    }
+    return [url];
+  });
+
+  allFiles = [...allFiles, ...comingSoonUrls];
+
+  return allFiles;
+}
+
+export async function getAllComingSoonPaths(): Promise<string[]> {
+  const comingSoonDirectory = path.join(process.cwd(), "public/comingsoon");
+  let allFiles: string[] = [];
+
+  const getFilesRecursively = (dir: string): string[] => {
+    let results: string[] = [];
+    if (!fs.existsSync(dir)) return results;
+
+    const list = fs.readdirSync(dir);
+    list.forEach((file) => {
+      const filePath = path.join(dir, file);
+      const stat = fs.statSync(filePath);
+
+      if (stat && stat.isDirectory()) {
+        results = results.concat(getFilesRecursively(filePath));
+      } else if (/\.(jpg|jpeg|png|webp|avif)$/i.test(file)) {
+        const relativePath = path.relative(path.join(process.cwd(), "public"), filePath);
+        results.push(relativePath.replace(/\\/g, '/'));
+      }
+    });
+
+    return results;
+  };
+
+  try {
+    allFiles = getFilesRecursively(comingSoonDirectory);
+  } catch (e) {
+    console.error("Error reading comingsoon directory:", e);
   }
 
   return allFiles;

@@ -413,6 +413,25 @@ const getPreviewUrl = (
   return null;
 };
 
+const getPathDimension = (pathStr: string): string => {
+  const pathWithoutQuery = pathStr.split("?")[0];
+  if (pathStr.includes("?size=")) {
+    return pathStr.split("?size=")[1].split("&")[0];
+  }
+  if (!pathStr.startsWith("http")) {
+    const parts = pathWithoutQuery.split("/");
+    const sizeFolder = parts.find(p => p.toLowerCase().includes("x") && /\d+x\d+/i.test(p));
+    if (sizeFolder) {
+      return sizeFolder;
+    }
+    const sizeFolderPart = parts[0];
+    if (sizeFolderPart.includes("x")) {
+      return sizeFolderPart;
+    }
+  }
+  return "N/A";
+};
+
 /* ─────────────────────────────────────────────
    Page Component
 ───────────────────────────────────────────── */
@@ -715,13 +734,7 @@ export default function ProductDetailPage({
   const imagePathWithoutQuery = imagePath.split("?")[0];
   const fileNameOnly = imagePathWithoutQuery.split("/").pop() || imagePathWithoutQuery;
   
-  let dimension = "N/A";
-  if (imagePath.includes("?size=")) {
-    dimension = imagePath.split("?size=")[1].split("&")[0];
-  } else if (!imagePath.startsWith("http")) {
-    dimension = imagePath.split("/")[0].split("?")[0] || "N/A";
-  }
-  dimension = dimension.toUpperCase();
+  let dimension = getPathDimension(imagePath).toUpperCase();
 
   const getVariantLink = (pathStr: string) => {
     if (pathStr.includes("?")) {
@@ -789,6 +802,8 @@ export default function ProductDetailPage({
     finish = productData.finish;
   }
 
+  const isComingSoon = imagePath.includes("comingsoon/") || category === "Coming Soon";
+
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { token } = useAppSelector((state: RootState) => state.auth);
@@ -835,7 +850,7 @@ export default function ProductDetailPage({
   const matchedDynamicGroup = useMemo(() => {
     if (matchedRightGroup || matchedLeftGroup || !currentKey || allTiles.length === 0) return null;
 
-    const currentDimension = imagePath.split("/")[0];
+    const currentDimension = getPathDimension(imagePath);
     const getVariantKey = (fname: string): string | null => {
       const clean = fname.split("--")[0].replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ").trim().toLowerCase();
       const words = clean.split(/\s+/);
@@ -853,12 +868,7 @@ export default function ProductDetailPage({
 
     // Find all other tiles in the same size folder that match the key
     const matched = allTiles.filter(t => {
-      let tDimension = "N/A";
-      if (t.includes("?size=")) {
-        tDimension = t.split("?size=")[1].split("&")[0];
-      } else if (!t.startsWith("http")) {
-        tDimension = t.split("/")[0];
-      }
+      const tDimension = getPathDimension(t);
       if (tDimension !== currentDimension) return false;
 
       const tFileName = t.split("?")[0].split("/").pop() || t;
@@ -878,18 +888,13 @@ export default function ProductDetailPage({
 
     const currentFileName = imagePath.split("/").pop() || imagePath;
     const currentSuffix = getFileNameSuffix(currentFileName).toLowerCase();
-    const currentDimension = imagePath.split("/")[0];
+    const currentDimension = getPathDimension(imagePath);
 
     const paths: string[] = [];
     for (const itemName of group) {
       // Filter candidates to ensure they belong to the same dimension folder
       const candidates = allTiles.filter((t) => {
-        let tDimension = "N/A";
-        if (t.includes("?size=")) {
-          tDimension = t.split("?size=")[1].split("&")[0];
-        } else if (!t.startsWith("http")) {
-          tDimension = t.split("/")[0];
-        }
+        const tDimension = getPathDimension(t);
         
         const tNameWithoutQuery = t.split("?")[0];
         const tName = tNameWithoutQuery.split("/").pop() || tNameWithoutQuery;
@@ -1073,7 +1078,7 @@ export default function ProductDetailPage({
             <div className="relative w-full aspect-square bg-transparent rounded-sm overflow-hidden flex items-center justify-center p-6 md:p-10 transition-all duration-300">
               {!imgError ? (
                 <img
-                  src={displayImagePath.startsWith("http") ? displayImagePath.split("?")[0] : `/tiles/${displayImagePath.split("?")[0].split('/').map(s => encodeURIComponent(s)).join('/')}`}
+                  src={displayImagePath.startsWith("http") ? displayImagePath.split("?")[0] : displayImagePath.startsWith("comingsoon/") ? `/${displayImagePath.split("?")[0].split('/').map(s => encodeURIComponent(s)).join('/')}` : `/tiles/${displayImagePath.split("?")[0].split('/').map(s => encodeURIComponent(s)).join('/')}`}
                   alt={displayName}
                   className="w-full h-full object-contain "
                   onError={() => setImgError(true)}
@@ -1100,7 +1105,7 @@ export default function ProductDetailPage({
               <div className="mt-4 flex gap-3">
                 <div className="w-20 h-20 bg-transparent border-2 border-[#4a2c2a] rounded-sm overflow-hidden flex items-center justify-center p-1 flex-shrink-0">
                   <img
-                    src={displayImagePath.startsWith("http") ? displayImagePath.split("?")[0] : `/tiles/${displayImagePath.split("?")[0]}`}
+                    src={displayImagePath.startsWith("http") ? displayImagePath.split("?")[0] : displayImagePath.startsWith("comingsoon/") ? `/${displayImagePath.split("?")[0]}` : `/tiles/${displayImagePath.split("?")[0]}`}
                     alt="thumb"
                     className="w-full h-full object-contain "
                   />
@@ -1174,7 +1179,7 @@ export default function ProductDetailPage({
                           className={`relative w-36 h-24 md:w-40 md:h-28 bg-transparent border-[3px] ${isActive ? "border-black" : "border-transparent"} hover:border-black/40 transition-colors overflow-hidden`}
                         >
                           <img
-                            src={path.startsWith("http") ? path.split("?")[0] : `/tiles/${path.split("?")[0]}`}
+                            src={path.startsWith("http") ? path.split("?")[0] : path.startsWith("comingsoon/") ? `/${path.split("?")[0]}` : `/tiles/${path.split("?")[0]}`}
                             alt={vName}
                             
                             className="w-full h-full object-cover  p-1"
@@ -1479,7 +1484,7 @@ export default function ProductDetailPage({
                           className={`relative w-24 h-24 md:w-28 md:h-28 bg-transparent border-2 ${isActive ? "border-[#4a2c2a]" : "border-transparent"} hover:border-[#4a2c2a]/50 transition-colors rounded-sm overflow-hidden`}
                         >
                           <img
-                            src={path.startsWith("http") ? path.split("?")[0] : `/tiles/${path.split("?")[0]}`}
+                            src={path.startsWith("http") ? path.split("?")[0] : path.startsWith("comingsoon/") ? `/${path.split("?")[0]}` : `/tiles/${path.split("?")[0]}`}
                             alt={vName}
                             
                             className="w-full h-full object-cover p-2 "
@@ -1778,6 +1783,17 @@ export default function ProductDetailPage({
                       Please enquire for pricing
                     </p>
                   </div>
+                ) : isComingSoon ? (
+                  <div className="mb-8">
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-400 mb-2">
+                      Price
+                    </p>
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-xl font-bold text-gray-400 uppercase tracking-wider">
+                        Coming Soon
+                      </span>
+                    </div>
+                  </div>
                 ) : (
                   <div className="mb-8">
                     <p className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-400 mb-2">
@@ -1798,7 +1814,14 @@ export default function ProductDetailPage({
 
                 {/* ── Add to Cart / Buy Now ── */}
                 <div className="flex flex-col gap-3 mb-8">
-                  {isPoster ? (
+                  {isComingSoon ? (
+                    <button
+                      disabled
+                      className="w-full py-4 text-[11px] font-black uppercase tracking-[0.25em] flex items-center justify-center gap-3 bg-gray-50 text-gray-400 border border-gray-100 cursor-not-allowed"
+                    >
+                      Coming Soon
+                    </button>
+                  ) : isPoster ? (
                     <Link
                       href="/contact"
                       className="w-full py-4 text-[11px] font-black uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3 bg-[#222] text-white hover:bg-black shadow-lg"
@@ -1862,19 +1885,27 @@ export default function ProductDetailPage({
                     Price
                   </p>
                   <div className="flex items-baseline gap-3">
-                    <span className="text-4xl font-bold text-[#4a2c2a]">
-                      £{details.price.toFixed(2)}
-                    </span>
-                    {displayOriginalPrice > details.price && (
-                      <span className="text-xl line-through text-gray-300">
-                        £{displayOriginalPrice.toFixed(2)}
+                    {isComingSoon ? (
+                      <span className="text-xl font-bold text-gray-400 uppercase tracking-wider">
+                        Coming Soon
                       </span>
+                    ) : (
+                      <>
+                        <span className="text-4xl font-bold text-[#4a2c2a]">
+                          £{details.price.toFixed(2)}
+                        </span>
+                        {displayOriginalPrice > details.price && (
+                          <span className="text-xl line-through text-gray-300">
+                            £{displayOriginalPrice.toFixed(2)}
+                          </span>
+                        )}
+                        <span className="text-[11px] text-gray-400 font-medium">
+                          / m²
+                        </span>
+                      </>
                     )}
-                    <span className="text-[11px] text-gray-400 font-medium">
-                      / m²
-                    </span>
                   </div>
-                  {displayOriginalPrice > details.price && (
+                  {!isComingSoon && displayOriginalPrice > details.price && (
                     <div className="mt-2 inline-flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 px-3 py-1 rounded-full">
                       <span className="text-[10px] font-bold uppercase tracking-wider">
                         Save £{(displayOriginalPrice - details.price).toFixed(2)}
@@ -1883,15 +1914,26 @@ export default function ProductDetailPage({
                   )}
                 </div>
 
-                <TilePackCalculator
-                  productId={fileNameOnly}
-                  productName={displayName}
-                  pricePerM2={details.price}
-                  size={dimension}
-                  image={displayImagePath.startsWith("http") ? displayImagePath.split("?")[0] : `/tiles/${displayImagePath.split("?")[0]}`}
-                  token={token}
-                  router={router}
-                />
+                {isComingSoon ? (
+                  <div className="mb-8">
+                    <button
+                      disabled
+                      className="w-full py-4 text-[11px] font-black uppercase tracking-[0.25em] flex items-center justify-center gap-3 bg-gray-50 text-gray-400 border border-gray-100 cursor-not-allowed"
+                    >
+                      Coming Soon
+                    </button>
+                  </div>
+                ) : (
+                  <TilePackCalculator
+                    productId={fileNameOnly}
+                    productName={displayName}
+                    pricePerM2={details.price}
+                    size={dimension}
+                    image={displayImagePath.startsWith("http") ? displayImagePath.split("?")[0] : displayImagePath.startsWith("comingsoon/") ? `/${displayImagePath.split("?")[0]}` : `/tiles/${displayImagePath.split("?")[0]}`}
+                    token={token}
+                    router={router}
+                  />
+                )}
 
                 <div className="flex gap-3 mb-8">
                   <button

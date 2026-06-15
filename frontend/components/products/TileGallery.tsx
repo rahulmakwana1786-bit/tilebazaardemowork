@@ -347,7 +347,13 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
       if (img.includes("?size=")) {
         size = img.split("?size=")[1].split("&")[0];
       } else if (img.split("/").length > 1 && !img.startsWith("http")) {
-        size = img.split("/")[0].split("?")[0];
+        const parts = img.split("?")[0].split("/");
+        const sizeFolder = parts.find(p => p.toLowerCase().includes("x") && /\d+x\d+/i.test(p));
+        if (sizeFolder) {
+          size = sizeFolder;
+        } else if (parts[0] !== "comingsoon" && parts[0].includes("x")) {
+          size = parts[0];
+        }
       }
       
       const key = `${baseName}_${size}`;
@@ -377,29 +383,46 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
     return result;
   }, [decodedInitialImages]);
 
-  const { uniqueSizes, uniqueFinishes } = useMemo(() => {
+  const { uniqueSizes, uniqueFinishes, uniqueComingSoonSizes } = useMemo(() => {
     const sizes = new Set<string>();
     const finishes = new Set<string>();
+    const csSizes = new Set<string>();
+    
     deduplicatedImages.forEach((img) => {
+      const isComingSoon = img.includes("comingsoon/");
+      
       let size = "OTHER";
       if (img.includes("?size=")) {
         size = img.split("?size=")[1].split("&")[0];
       } else if (img.split("/").length > 1 && !img.startsWith("http")) {
-        size = img.split("/")[0];
+        const parts = img.split("?")[0].split("/");
+        const sizeFolder = parts.find(p => p.toLowerCase().includes("x") && /\d+x\d+/i.test(p));
+        if (sizeFolder) {
+          size = sizeFolder;
+        } else if (parts[0] !== "comingsoon" && parts[0].includes("x")) {
+          size = parts[0];
+        }
       }
       size = size.toLowerCase();
       
       if (size !== "other") {
-        sizes.add(size);
+        if (isComingSoon) {
+          csSizes.add(size);
+        } else {
+          sizes.add(size);
+        }
       }
       
-      const fileName = img.split("?")[0].split("/").pop() || img;
-      const finish = getFinish(fileName);
-      if (finish !== "OTHER") finishes.add(finish);
+      if (!isComingSoon) {
+        const fileName = img.split("?")[0].split("/").pop() || img;
+        const finish = getFinish(fileName);
+        if (finish !== "OTHER") finishes.add(finish);
+      }
     });
     return {
       uniqueSizes: Array.from(sizes).sort(),
       uniqueFinishes: Array.from(finishes).sort(),
+      uniqueComingSoonSizes: Array.from(csSizes).sort(),
     };
   }, [deduplicatedImages]);
 
@@ -407,12 +430,19 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
     return deduplicatedImages.filter((img) => {
       const fileName = img.split("?")[0].split("/").pop() || img;
       const finish = getFinish(fileName);
+      const isComingSoon = img.includes("comingsoon/");
       
       let size = "OTHER";
       if (img.includes("?size=")) {
         size = img.split("?size=")[1].split("&")[0];
       } else if (img.split("/").length > 1 && !img.startsWith("http")) {
-        size = img.split("/")[0];
+        const parts = img.split("?")[0].split("/");
+        const sizeFolder = parts.find(p => p.toLowerCase().includes("x") && /\d+x\d+/i.test(p));
+        if (sizeFolder) {
+          size = sizeFolder;
+        } else if (parts[0] !== "comingsoon" && parts[0].includes("x")) {
+          size = parts[0];
+        }
       }
       size = size.toLowerCase();
       
@@ -452,6 +482,17 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
           upperName.includes("MATTING");
         if (isAccessory) return false;
 
+        // Handle Coming Soon products isolation
+        if (isComingSoon) {
+          if (finishFilter !== "COMING SOON") {
+            return false;
+          }
+        } else {
+          if (finishFilter === "COMING SOON") {
+            return false;
+          }
+        }
+
         // Fetch category from Supabase-mapped image query params
         let category = "";
         if (img.includes("?")) {
@@ -469,9 +510,11 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
 
         const matchesFinish =
           !finishFilter ||
-          (finishFilter === "NEW ARRIVALS"
-            ? upperName.startsWith("EXP") || upperName.startsWith("TC") || upperName.startsWith("AURL") || upperName.includes("PAVE") || upperName.includes("SALTED CONCRETO")
-            : finish === finishFilter);
+          (finishFilter === "COMING SOON"
+            ? true
+            : finishFilter === "NEW ARRIVALS"
+              ? upperName.startsWith("EXP") || upperName.startsWith("TC") || upperName.startsWith("AURL") || upperName.includes("PAVE") || upperName.includes("SALTED CONCRETO")
+              : finish === finishFilter);
         const matchesSize = !sizeFilter || size === sizeFilter;
         return matchesPlacement && matchesFinish && matchesSize;
       }
@@ -496,13 +539,22 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
       }
     }
 
+    if (type === "finish") {
+      const currentIsComingSoon = finishFilter === "COMING SOON";
+      const newIsComingSoon = value === "COMING SOON";
+      if (currentIsComingSoon !== newIsComingSoon) {
+        params.delete("size");
+        params.delete("placement");
+      }
+    }
+
     return `${pathname}?${params.toString()}`;
   };
 
   const filterContent = (
     <div className="space-y-12">
       {/* Placement Filter */}
-      {sizeFilter !== "accessories" && (
+      {sizeFilter !== "accessories" && finishFilter !== "COMING SOON" && (
         <div className="text-center">
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 mb-6">
             Placement
@@ -551,41 +603,82 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
       )}
 
       {/* Dimensions Filter */}
-      <div className="text-center">
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 mb-6">
-          Dimensions
-        </p>
-        <div className="flex flex-wrap justify-center gap-3">
-          <Link
-            href={createFilterUrl("size", null)}
-            scroll={false}
-            onClick={() => setIsMobileFilterOpen(false)}
-            className={`px-7 py-3 text-[10px] font-bold uppercase tracking-widest border rounded-full transition-all duration-300 inline-block ${
-              sizeFilter === null
-                ? "bg-[#4a2c2a] text-white border-[#4a2c2a] shadow-lg"
-                : "bg-white text-[#5e7e95] border-gray-100 hover:border-gray-200"
-            }`}
-          >
-            All Sizes
-          </Link>
-
-          {uniqueSizes.map((size) => (
+      {sizeFilter !== "accessories" && finishFilter !== "COMING SOON" && (
+        <div className="text-center">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 mb-6">
+            Dimensions
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
             <Link
-              key={size}
-              href={createFilterUrl("size", size)}
+              href={createFilterUrl("size", null)}
               scroll={false}
               onClick={() => setIsMobileFilterOpen(false)}
               className={`px-7 py-3 text-[10px] font-bold uppercase tracking-widest border rounded-full transition-all duration-300 inline-block ${
-                sizeFilter === size
+                sizeFilter === null
                   ? "bg-[#4a2c2a] text-white border-[#4a2c2a] shadow-lg"
                   : "bg-white text-[#5e7e95] border-gray-100 hover:border-gray-200"
               }`}
             >
-              {size}
+              All Sizes
             </Link>
-          ))}
+
+            {uniqueSizes.map((size) => (
+              <Link
+                key={size}
+                href={createFilterUrl("size", size)}
+                scroll={false}
+                onClick={() => setIsMobileFilterOpen(false)}
+                className={`px-7 py-3 text-[10px] font-bold uppercase tracking-widest border rounded-full transition-all duration-300 inline-block ${
+                  sizeFilter === size
+                    ? "bg-[#4a2c2a] text-white border-[#4a2c2a] shadow-lg"
+                    : "bg-white text-[#5e7e95] border-gray-100 hover:border-gray-200"
+                }`}
+              >
+                {size}
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Coming Soon Sizes Filter */}
+      {finishFilter === "COMING SOON" && (
+        <div className="text-center">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 mb-6">
+            Coming Soon Sizes
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link
+              href={createFilterUrl("size", null)}
+              scroll={false}
+              onClick={() => setIsMobileFilterOpen(false)}
+              className={`px-7 py-3 text-[10px] font-bold uppercase tracking-widest border rounded-full transition-all duration-300 inline-block ${
+                sizeFilter === null
+                  ? "bg-[#4a2c2a] text-white border-[#4a2c2a] shadow-lg"
+                  : "bg-white text-[#5e7e95] border-gray-100 hover:border-gray-200"
+              }`}
+            >
+              All Sizes
+            </Link>
+
+            {uniqueComingSoonSizes.map((size) => (
+              <Link
+                key={size}
+                href={createFilterUrl("size", size)}
+                scroll={false}
+                onClick={() => setIsMobileFilterOpen(false)}
+                className={`px-7 py-3 text-[10px] font-bold uppercase tracking-widest border rounded-full transition-all duration-300 inline-block ${
+                  sizeFilter === size
+                    ? "bg-[#4a2c2a] text-white border-[#4a2c2a] shadow-lg"
+                    : "bg-white text-[#5e7e95] border-gray-100 hover:border-gray-200"
+                }`}
+              >
+                {size}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Conditional Sub-Filter */}
       {sizeFilter === "accessories" ? (
@@ -662,6 +755,19 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
               }`}
             >
               New Arrivals
+            </Link>
+
+            <Link
+              href={createFilterUrl("finish", "COMING SOON")}
+              scroll={false}
+              onClick={() => setIsMobileFilterOpen(false)}
+              className={`px-7 py-3 text-[10px] font-bold uppercase tracking-widest border rounded-full transition-all duration-300 inline-block ${
+                finishFilter === "COMING SOON"
+                  ? "bg-[#4a2c2a] text-white border-[#4a2c2a] shadow-lg"
+                  : "bg-white text-[#5e7e95] border-gray-100 hover:border-gray-200"
+              }`}
+            >
+              Coming Soon
             </Link>
             {uniqueFinishes.map((finish) => (
               <Link
@@ -752,7 +858,13 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
           if (imageName.includes("?size=")) {
             dimension = imageName.split("?size=")[1].split("&")[0];
           } else if (!imageName.startsWith("http")) {
-            dimension = imageName.split("/")[0].split("?")[0] || "N/A";
+            const parts = imageNameWithoutQuery.split("/");
+            const sizeFolder = parts.find(p => p.toLowerCase().includes("x") && /\d+x\d+/i.test(p));
+            if (sizeFolder) {
+              dimension = sizeFolder;
+            } else if (parts[0] !== "comingsoon" && parts[0].includes("x")) {
+              dimension = parts[0].split("?")[0] || "N/A";
+            }
           }
           dimension = dimension.toUpperCase();
 
@@ -765,7 +877,7 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
               <Link href={detailPageUrl} className="relative w-full aspect-[5/4] bg-[#fbfbfb] flex items-center justify-center p-6 mb-5 overflow-hidden group/image cursor-pointer">
                 {/* Main Tile Image */}
                 <img
-                  src={imageName.startsWith("http") ? imageNameWithoutQuery : `/tiles/${imageNameWithoutQuery.split('/').map(s => encodeURIComponent(s)).join('/')}${imgVersion ? `?v=${imgVersion}` : ""}`}
+                  src={imageName.startsWith("http") ? imageNameWithoutQuery : imageNameWithoutQuery.startsWith("comingsoon/") ? `/${imageNameWithoutQuery.split('/').map(s => encodeURIComponent(s)).join('/')}${imgVersion ? `?v=${imgVersion}` : ""}` : `/tiles/${imageNameWithoutQuery.split('/').map(s => encodeURIComponent(s)).join('/')}${imgVersion ? `?v=${imgVersion}` : ""}`}
                   alt={fileNameOnly}
                   className={`w-full h-full object-contain mix-blend-multiply transition-opacity duration-300 ${previewUrl ? 'group-hover/image:opacity-0' : 'group-hover/image:scale-105'}`}
                 />
@@ -802,7 +914,9 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
                 </Link>
 
                 <div className="flex items-end gap-2 mb-5">
-                  {isPoster ? (
+                  {imageNameWithoutQuery.startsWith("comingsoon/") ? (
+                    <span className="text-[14px] font-bold text-gray-400 uppercase tracking-wider">Coming Soon</span>
+                  ) : isPoster ? (
                     <span className="text-[16px] font-bold text-[#4a2c2a]">POA</span>
                   ) : (
                     <>
@@ -822,7 +936,14 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
                 </div>
 
                 <div className="mt-auto">
-                  {isPoster ? (
+                  {imageNameWithoutQuery.startsWith("comingsoon/") ? (
+                    <button
+                      disabled
+                      className="w-full flex justify-center bg-gray-50 text-gray-400 py-3 text-[10px] font-bold uppercase tracking-widest cursor-not-allowed border border-gray-100"
+                    >
+                      Coming Soon
+                    </button>
+                  ) : isPoster ? (
                     <Link
                       href="/contact"
                       className="w-full flex justify-center bg-[#222] text-white hover:bg-black py-3 text-[10px] font-bold uppercase tracking-widest transition-colors"
@@ -834,7 +955,7 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
                         product={{
                           id: fileNameOnly,
                           name: displayName,
-                          image: imageName.startsWith("http") ? imageNameWithoutQuery : `/tiles/${imageNameWithoutQuery}`,
+                          image: imageName.startsWith("http") ? imageNameWithoutQuery : imageNameWithoutQuery.startsWith("comingsoon/") ? `/${imageNameWithoutQuery}` : `/tiles/${imageNameWithoutQuery}`,
                           price: displayPrice,
                           category: category
                         }}
