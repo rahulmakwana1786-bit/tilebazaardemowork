@@ -157,16 +157,42 @@ export default function WishlistPage() {
 
       const fileNameOnly = slug;
       const details = getProductDetails(fileNameOnly);
-      
+
+      // Parse query parameters from fullPath if present
+      const queryString = fullPath.split("?")[1] || "";
+      const params = new URLSearchParams(queryString);
+
+      const nameParam = params.get("name");
+      const priceParam = params.get("price");
+      const discountParam = params.get("discountPrice");
+      const categoryParam = params.get("category");
+      const sizeParam = params.get("size");
+
+      const name = nameParam ? decodeURIComponent(nameParam) : formatFileName(fileNameOnly);
+      const price = priceParam ? parseFloat(priceParam) : details.price;
+      const discountPrice = discountParam ? parseFloat(discountParam) : (details.isAccessory ? 0 : price + 5);
+      const category = categoryParam ? decodeURIComponent(categoryParam) : getCategory(fileNameOnly);
+      const size = sizeParam ? decodeURIComponent(sizeParam) : (fullPath.split("/")[0] || "N/A");
+
+      const cleanPath = fullPath.split("?")[0];
+      let resolvedImage = "";
+      if (cleanPath.startsWith("http")) {
+        resolvedImage = cleanPath;
+      } else if (cleanPath.startsWith("comingsoon/")) {
+        resolvedImage = `/${cleanPath.split('/').map(s => encodeURIComponent(s)).join('/')}`;
+      } else {
+        resolvedImage = `/tiles/${cleanPath.split('/').map(s => encodeURIComponent(s)).join('/')}`;
+      }
+
       return {
         id: fileNameOnly,
-        name: formatFileName(fileNameOnly),
+        name,
         slug: fullPath,
-        image: `/tiles/${fullPath}`,
-        price: details.price,
-        discount_price: details.isAccessory ? 0 : details.price + 5,
-        category: getCategory(fileNameOnly),
-        size: fullPath.split("/")[0] || "N/A",
+        image: resolvedImage,
+        price,
+        discount_price: discountPrice,
+        category,
+        size,
       };
     }).filter(Boolean) as WishlistProduct[];
   }, [wishlistSlugs, allTiles]);
@@ -223,6 +249,7 @@ export default function WishlistPage() {
                 const imagePath = product.image;
                 const isPoster = product.id.toUpperCase().includes("POSTER");
                 const price = product.price;
+                const isComingSoon = product.slug.includes("comingsoon/") || product.category === "Coming Soon";
 
                 return (
                   <div key={product.id} className="group flex flex-col relative">
@@ -245,7 +272,7 @@ export default function WishlistPage() {
                       className="relative w-full aspect-[5/4] bg-[#fbfbfb] flex items-center justify-center p-6 mb-5 overflow-hidden group/image cursor-pointer border border-gray-50 hover:border-gray-100 transition-colors"
                     >
                       <Image
-                        src={imagePath.split('/').map(s => encodeURIComponent(s)).join('/')}
+                        src={imagePath}
                         alt={product.name}
                         fill
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
@@ -280,7 +307,9 @@ export default function WishlistPage() {
                       </p>
 
                       <div className="flex items-end gap-2 mb-6">
-                        {isPoster ? (
+                        {isComingSoon ? (
+                          <span className="text-[14px] font-bold text-gray-400 uppercase tracking-wider">Coming Soon</span>
+                        ) : isPoster ? (
                           <span className="text-[16px] font-bold text-[#4a2c2a]">POA</span>
                         ) : (
                           <>
@@ -301,7 +330,14 @@ export default function WishlistPage() {
 
                       {/* Action Button */}
                       <div className="mt-auto">
-                        {isPoster ? (
+                        {isComingSoon ? (
+                          <button
+                            disabled={true}
+                            className="w-full bg-gray-50 text-gray-400 py-3.5 text-[10px] font-bold uppercase tracking-widest cursor-not-allowed border border-gray-100"
+                          >
+                            Coming Soon
+                          </button>
+                        ) : isPoster ? (
                           <button
                             disabled={true}
                             className="w-full bg-gray-100 text-gray-400 py-3.5 text-[10px] font-bold uppercase tracking-widest cursor-not-allowed"

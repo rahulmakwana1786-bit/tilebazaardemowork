@@ -412,6 +412,19 @@ export async function getAllComingSoonPaths(): Promise<string[]> {
     console.error("Error reading comingsoon directory:", e);
   }
 
+  // Fallback to static comingsoon-list.json if allFiles is empty (e.g. on Vercel serverless)
+  if (allFiles.length === 0) {
+    try {
+      const comingsoonListPath = path.join(process.cwd(), "app/comingsoon-list.json");
+      if (fs.existsSync(comingsoonListPath)) {
+        const data = fs.readFileSync(comingsoonListPath, "utf-8");
+        allFiles = JSON.parse(data);
+      }
+    } catch (err) {
+      console.error("Failed to read static comingsoon list fallback:", err);
+    }
+  }
+
   return allFiles;
 }
 

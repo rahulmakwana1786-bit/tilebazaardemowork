@@ -132,7 +132,7 @@ import { useRouter } from "next/navigation";
 const getProductImagePath = (product: any) => {
   if (!product || !product.image) return "/placeholder-tile.jpg";
   if (product.image.startsWith("http")) return product.image;
-  if (product.image.startsWith("/tiles/")) return product.image;
+  if (product.image.startsWith("/")) return product.image;
   
   const category = (product.category || "").toLowerCase();
   const size = (product.size || "").toLowerCase();
