@@ -394,7 +394,7 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
     const csSizes = new Set<string>();
     
     deduplicatedImages.forEach((img) => {
-      const isComingSoon = img.includes("comingsoon/");
+      const isComingSoon = img.includes("comingsoon/") || (img.includes("?") && new URLSearchParams(img.split("?")[1]).get("isComingSoon") === "true");
       
       let size = "OTHER";
       if (img.includes("?size=")) {
@@ -435,7 +435,7 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
     return deduplicatedImages.filter((img) => {
       const fileName = img.split("?")[0].split("/").pop() || img;
       const finish = getFinish(fileName);
-      const isComingSoon = img.includes("comingsoon/");
+      const isComingSoon = img.includes("comingsoon/") || (img.includes("?") && new URLSearchParams(img.split("?")[1]).get("isComingSoon") === "true");
       
       let size = "OTHER";
       if (img.includes("?size=")) {
@@ -836,6 +836,8 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
           let displayOriginalPrice = details.price + 5;
           let category = "";
           let productSlug = "";
+          let isComingSoon = imageNameWithoutQuery.startsWith("comingsoon/");
+          let isOutOfStock = false;
           
           if (imageName.includes("?")) {
              const params = new URLSearchParams(imageName.split("?")[1]);
@@ -854,6 +856,15 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
              if (params.has("slug")) {
                productSlug = params.get("slug")!;
              }
+             if (params.get("isComingSoon") === "true") {
+               isComingSoon = true;
+             }
+             if (params.get("isOutOfStock") === "true") {
+               isOutOfStock = true;
+             }
+          }
+          if (category === "Coming Soon") {
+            isComingSoon = true;
           }
 
           const detailPageUrl = productSlug ? `/products/${productSlug}` : `/products/${encodeURIComponent(imageName)}`;
@@ -919,7 +930,7 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
                 </Link>
 
                 <div className="flex items-end gap-2 mb-5">
-                  {imageNameWithoutQuery.startsWith("comingsoon/") ? (
+                  {isComingSoon ? (
                     <span className="text-[14px] font-bold text-gray-400 uppercase tracking-wider">Coming Soon</span>
                   ) : isPoster ? (
                     <span className="text-[16px] font-bold text-[#4a2c2a]">POA</span>
@@ -941,12 +952,19 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
                 </div>
 
                 <div className="mt-auto">
-                  {imageNameWithoutQuery.startsWith("comingsoon/") ? (
+                  {isComingSoon ? (
                     <button
                       disabled
                       className="w-full flex justify-center bg-gray-50 text-gray-400 py-3 text-[10px] font-bold uppercase tracking-widest cursor-not-allowed border border-gray-100"
                     >
                       Coming Soon
+                    </button>
+                  ) : isOutOfStock ? (
+                    <button
+                      disabled
+                      className="w-full flex justify-center bg-gray-50 text-gray-400 py-3 text-[10px] font-bold uppercase tracking-widest cursor-not-allowed border border-gray-100"
+                    >
+                      Out of Stock
                     </button>
                   ) : isPoster ? (
                     <Link

@@ -22,6 +22,8 @@ export interface Product {
   
   // Metadata
   is_active: boolean;     // To hide/show products
+  is_coming_soon?: boolean;
+  is_out_of_stock?: boolean;
   created_at: string;
 }
 

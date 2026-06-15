@@ -286,6 +286,8 @@ interface Product {
   image: string;
   is_active: boolean;
   slug?: string;
+  is_coming_soon?: boolean;
+  is_out_of_stock?: boolean;
 }
 const getProductImagePath = (image: string | undefined | null, category?: string, size?: string) => {
   if (!image) return "/placeholder-tile.jpg";
@@ -357,7 +359,9 @@ function ProductEditForm({ product, id }: { product: Product; id: string }) {
     size: product.size || '',
     thickness: product.thickness || '',
     material: product.material || '',
-    is_active: Boolean(product.is_active)
+    is_active: Boolean(product.is_active),
+    is_coming_soon: Boolean(product.is_coming_soon),
+    is_out_of_stock: Boolean(product.is_out_of_stock)
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -385,11 +389,32 @@ const handleDrop = (e: React.DragEvent) => {
 };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target as HTMLInputElement;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    }));
+    const target = e.target;
+    const name = target.name;
+    const value = target instanceof HTMLInputElement && target.type === 'checkbox'
+      ? target.checked
+      : target.value;
+
+    if (name === 'is_coming_soon' && value === true) {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        price: '0',
+        discount_price: '',
+        stock: '0'
+      }));
+    } else if (name === 'is_out_of_stock' && value === true) {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        stock: '0'
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -492,29 +517,29 @@ const handleDrop = (e: React.DragEvent) => {
               <label className="text-[10px] font-bold uppercase tracking-widest text-[#4a2c2a]">Product Name</label>
               <input required name="name" value={formData.name} onChange={handleChange} className="w-full mt-2 p-3 border-b border-gray-100 focus:border-[#4a2c2a] outline-none text-sm bg-transparent" />
             </div>
-
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-[#4a2c2a]">Price (£/sqm)</label>
-              <input required type="number" step="0.01" name="price" value={formData.price} onChange={handleChange} className="w-full mt-2 p-3 border-b border-gray-100 focus:border-[#4a2c2a] outline-none text-sm bg-transparent" />
+              <input required={!formData.is_coming_soon} disabled={formData.is_coming_soon} type="number" step="0.01" name="price" value={formData.price} onChange={handleChange} className="w-full mt-2 p-3 border-b border-gray-100 focus:border-[#4a2c2a] outline-none text-sm bg-transparent disabled:opacity-50 disabled:cursor-not-allowed" />
             </div>
             
-<div>
-  <label className="text-[10px] font-bold uppercase tracking-widest text-[#4a2c2a]">
-    Discount Price (£/sqm)
-  </label>
-  <input 
-    type="number" 
-    step="0.01" 
-    name="discount_price" 
-    value={formData.discount_price} 
-    onChange={handleChange} 
-    className="w-full mt-2 p-3 border-b border-gray-100 focus:border-[#4a2c2a] outline-none text-sm bg-transparent" 
-    placeholder="0.00 (Leave empty for no discount)" 
-  />
-</div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-[#4a2c2a]">
+                Discount Price (£/sqm)
+              </label>
+              <input 
+                type="number" 
+                step="0.01" 
+                name="discount_price" 
+                disabled={formData.is_coming_soon}
+                value={formData.discount_price} 
+                onChange={handleChange} 
+                className="w-full mt-2 p-3 border-b border-gray-100 focus:border-[#4a2c2a] outline-none text-sm bg-transparent disabled:opacity-50 disabled:cursor-not-allowed" 
+                placeholder="0.00 (Leave empty for no discount)" 
+              />
+            </div>
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest text-[#4a2c2a]">Stock (sqm)</label>
-              <input required type="number" name="stock" value={formData.stock} onChange={handleChange} className="w-full mt-2 p-3 border-b border-gray-100 focus:border-[#4a2c2a] outline-none text-sm bg-transparent" />
+              <input required={!formData.is_coming_soon && !formData.is_out_of_stock} disabled={formData.is_coming_soon || formData.is_out_of_stock} type="number" name="stock" value={formData.stock} onChange={handleChange} className="w-full mt-2 p-3 border-b border-gray-100 focus:border-[#4a2c2a] outline-none text-sm bg-transparent disabled:opacity-50 disabled:cursor-not-allowed" />
             </div>
 
             <div>
@@ -567,6 +592,34 @@ const handleDrop = (e: React.DragEvent) => {
             />
             <label htmlFor="is_active" className="text-[10px] font-bold uppercase tracking-widest text-[#4a2c2a] cursor-pointer">
               Display product on live store
+            </label>
+          </div>
+
+          <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-sm">
+            <input 
+              type="checkbox" 
+              name="is_coming_soon" 
+              id="is_coming_soon"
+              checked={formData.is_coming_soon} 
+              onChange={handleChange}
+              className="w-4 h-4 accent-[#4a2c2a] cursor-pointer"
+            />
+            <label htmlFor="is_coming_soon" className="text-[10px] font-bold uppercase tracking-widest text-[#4a2c2a] cursor-pointer">
+              Coming Soon Product
+            </label>
+          </div>
+
+          <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-sm">
+            <input 
+              type="checkbox" 
+              name="is_out_of_stock" 
+              id="is_out_of_stock"
+              checked={formData.is_out_of_stock} 
+              onChange={handleChange}
+              className="w-4 h-4 accent-[#4a2c2a] cursor-pointer"
+            />
+            <label htmlFor="is_out_of_stock" className="text-[10px] font-bold uppercase tracking-widest text-[#4a2c2a] cursor-pointer">
+              Out of Stock Product
             </label>
           </div>
 

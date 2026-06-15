@@ -22,6 +22,8 @@ type WishlistProduct = {
   discount_price: number;
   category: string;
   size: string;
+  isComingSoon: boolean;
+  isOutOfStock: boolean;
 };
 
 const getProductDetails = (fileName: string) => {
@@ -184,6 +186,12 @@ export default function WishlistPage() {
         resolvedImage = `/tiles/${cleanPath.split('/').map(s => encodeURIComponent(s)).join('/')}`;
       }
 
+      const isComingSoonParam = params.get("isComingSoon");
+      const isOutOfStockParam = params.get("isOutOfStock");
+
+      const isComingSoon = isComingSoonParam === "true" || cleanPath.startsWith("comingsoon/");
+      const isOutOfStock = isOutOfStockParam === "true";
+
       return {
         id: fileNameOnly,
         name,
@@ -193,6 +201,8 @@ export default function WishlistPage() {
         discount_price: discountPrice,
         category,
         size,
+        isComingSoon,
+        isOutOfStock
       };
     }).filter(Boolean) as WishlistProduct[];
   }, [wishlistSlugs, allTiles]);
@@ -249,7 +259,8 @@ export default function WishlistPage() {
                 const imagePath = product.image;
                 const isPoster = product.id.toUpperCase().includes("POSTER");
                 const price = product.price;
-                const isComingSoon = product.slug.includes("comingsoon/") || product.category === "Coming Soon";
+                const isComingSoon = product.isComingSoon;
+                const isOutOfStock = product.isOutOfStock;
 
                 return (
                   <div key={product.id} className="group flex flex-col relative">
@@ -336,6 +347,13 @@ export default function WishlistPage() {
                             className="w-full bg-gray-50 text-gray-400 py-3.5 text-[10px] font-bold uppercase tracking-widest cursor-not-allowed border border-gray-100"
                           >
                             Coming Soon
+                          </button>
+                        ) : isOutOfStock ? (
+                          <button
+                            disabled={true}
+                            className="w-full bg-gray-50 text-gray-400 py-3.5 text-[10px] font-bold uppercase tracking-widest cursor-not-allowed border border-gray-100"
+                          >
+                            Out of Stock
                           </button>
                         ) : isPoster ? (
                           <button

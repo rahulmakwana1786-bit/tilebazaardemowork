@@ -25,7 +25,9 @@ export default function AddProductPage() {
     finish: 'Glossy',
     size: '',
     thickness: '',
-    material: ''
+    material: '',
+    is_coming_soon: false,
+    is_out_of_stock: false
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -34,7 +36,32 @@ export default function AddProductPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const target = e.target;
+    const name = target.name;
+    const value = target instanceof HTMLInputElement && target.type === 'checkbox'
+      ? target.checked
+      : target.value;
+
+    if (name === 'is_coming_soon' && value === true) {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        price: '0',
+        discount_price: '',
+        stock: '0'
+      }));
+    } else if (name === 'is_out_of_stock' && value === true) {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        stock: '0'
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   // --- DRAG AND DROP HANDLERS ---
@@ -74,13 +101,12 @@ export default function AddProductPage() {
 
     const data = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
-    if (Array.isArray(value)) {
-      // Option A: Send as JSON string (Best for Supabase JSONB columns)
-      data.append(key, JSON.stringify(value));
-    } else {
-      data.append(key, value);
-    }
-  });
+      if (Array.isArray(value)) {
+        data.append(key, JSON.stringify(value));
+      } else {
+        data.append(key, value.toString());
+      }
+    });
     data.append('image', imageFile);
 
     // 1. Create the promise by unwrapping the dispatch
@@ -190,7 +216,7 @@ export default function AddProductPage() {
   {/* Row 2: Price & Stock */}
   <div>
     <label className="text-[10px] font-bold uppercase tracking-widest text-[#4a2c2a]">Price (£/sqm) *</label>
-    <input required type="number" step="0.01" name="price" value={formData.price} onChange={handleChange} className="w-full mt-2 p-3 border-b border-gray-100 focus:border-[#4a2c2a] outline-none text-sm bg-transparent" placeholder="0.00" />
+    <input required={!formData.is_coming_soon} disabled={formData.is_coming_soon} type="number" step="0.01" name="price" value={formData.price} onChange={handleChange} className="w-full mt-2 p-3 border-b border-gray-100 focus:border-[#4a2c2a] outline-none text-sm bg-transparent disabled:opacity-50 disabled:cursor-not-allowed" placeholder="0.00" />
   </div>
   <div>
     <label className="text-[10px] font-bold uppercase tracking-widest text-[#4a2c2a]">Discount Price (£/sqm)</label>
@@ -198,15 +224,16 @@ export default function AddProductPage() {
       type="number" 
       step="0.01" 
       name="discount_price" 
+      disabled={formData.is_coming_soon}
       value={formData.discount_price} 
       onChange={handleChange} 
-      className="w-full mt-2 p-3 border-b border-gray-100 focus:border-[#4a2c2a] outline-none text-sm bg-transparent" 
+      className="w-full mt-2 p-3 border-b border-gray-100 focus:border-[#4a2c2a] outline-none text-sm bg-transparent disabled:opacity-50 disabled:cursor-not-allowed" 
       placeholder="0.00 (Leave empty for no discount)" 
     />
   </div>
   <div>
     <label className="text-[10px] font-bold uppercase tracking-widest text-[#4a2c2a]">Initial Stock (sqm) *</label>
-    <input required type="number" name="stock" value={formData.stock} onChange={handleChange} className="w-full mt-2 p-3 border-b border-gray-100 focus:border-[#4a2c2a] outline-none text-sm bg-transparent" placeholder="100" />
+    <input required={!formData.is_coming_soon && !formData.is_out_of_stock} disabled={formData.is_coming_soon || formData.is_out_of_stock} type="number" name="stock" value={formData.stock} onChange={handleChange} className="w-full mt-2 p-3 border-b border-gray-100 focus:border-[#4a2c2a] outline-none text-sm bg-transparent disabled:opacity-50 disabled:cursor-not-allowed" placeholder="100" />
   </div>
 
   {/* Row 3: Size & Thickness */}
@@ -260,6 +287,35 @@ export default function AddProductPage() {
               <IoCloseOutline size={18} /> {error}
             </div>
           )}
+
+          <div className="space-y-4 p-4 bg-gray-50 rounded-sm">
+            <div className="flex items-center gap-3">
+              <input 
+                type="checkbox" 
+                name="is_coming_soon" 
+                id="is_coming_soon"
+                checked={formData.is_coming_soon} 
+                onChange={handleChange}
+                className="w-4 h-4 accent-[#4a2c2a] cursor-pointer"
+              />
+              <label htmlFor="is_coming_soon" className="text-[10px] font-bold uppercase tracking-widest text-[#4a2c2a] cursor-pointer">
+                Coming Soon Product
+              </label>
+            </div>
+            <div className="flex items-center gap-3">
+              <input 
+                type="checkbox" 
+                name="is_out_of_stock" 
+                id="is_out_of_stock"
+                checked={formData.is_out_of_stock} 
+                onChange={handleChange}
+                className="w-4 h-4 accent-[#4a2c2a] cursor-pointer"
+              />
+              <label htmlFor="is_out_of_stock" className="text-[10px] font-bold uppercase tracking-widest text-[#4a2c2a] cursor-pointer">
+                Out of Stock Product
+              </label>
+            </div>
+          </div>
 
           <button 
             type="submit" 

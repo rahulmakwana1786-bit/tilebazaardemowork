@@ -176,7 +176,7 @@ export const adminGetProducts = async (req: Request, res: Response) => {
 // 1. Add New Product
 export const addProduct = async (req: Request, res: Response) => {
   try {
-    const { name, description, price, discount_price, stock, category, finish, size, thickness, material, is_active } = req.body;
+    const { name, description, price, discount_price, stock, category, finish, size, thickness, material, is_active, is_coming_soon, is_out_of_stock } = req.body;
 
     if (!req.file) {
       return res.status(400).json({ message: 'Product image is required' });
@@ -212,11 +212,15 @@ export const addProduct = async (req: Request, res: Response) => {
     };
 
     const imageUrl = await uploadToCloudinary() as string;
-    const basePrice = parseFloat(price);
-    // If discount_price is an empty string or undefined, save as null
-    const discountPrice = (discount_price && discount_price !== "") 
-      ? parseFloat(discount_price) 
-      : null;
+    
+    const isComingSoon = is_coming_soon === 'true' || is_coming_soon === true;
+    const isOutOfStock = is_out_of_stock === 'true' || is_out_of_stock === true;
+
+    const basePrice = isComingSoon ? 0 : parseFloat(price);
+    const discountPrice = isComingSoon 
+      ? null 
+      : ((discount_price && discount_price !== "") ? parseFloat(discount_price) : null);
+    const productStock = (isComingSoon || isOutOfStock) ? 0 : parseInt(stock);
 
     // --- SAVE TO SUPABASE ---
     const { data, error } = await supabase
@@ -227,13 +231,15 @@ export const addProduct = async (req: Request, res: Response) => {
         description, 
         price: basePrice, 
         discount_price: discountPrice,
-        stock: parseInt(stock), 
+        stock: productStock, 
         category,
         finish,
         size, 
         thickness, 
         material,
         is_active: is_active === 'true' || is_active === true,
+        is_coming_soon: isComingSoon,
+        is_out_of_stock: isOutOfStock,
         image: imageUrl 
       }])
       .select().single();
@@ -320,19 +326,34 @@ export const updateProduct = async (req: Request, res: Response) => {
     }
 
     // 3. Perform update in Supabase
-    // price and stock are parsed just in case they come as strings from FormData
-    if (updates.price) updates.price = parseFloat(updates.price);
-    if (Object.prototype.hasOwnProperty.call(updates, 'discount_price')) {
-      updates.discount_price = (updates.discount_price && updates.discount_price !== "") 
-        ? parseFloat(updates.discount_price) 
-        : null;
-    }
-
-    if (updates.stock !== undefined && updates.stock !== null && updates.stock !== '') {
-      updates.stock = parseInt(updates.stock);
-    }
     if (Object.prototype.hasOwnProperty.call(updates, 'is_active')) {
       updates.is_active = updates.is_active === 'true' || updates.is_active === true;
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, 'is_coming_soon')) {
+      updates.is_coming_soon = updates.is_coming_soon === 'true' || updates.is_coming_soon === true;
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, 'is_out_of_stock')) {
+      updates.is_out_of_stock = updates.is_out_of_stock === 'true' || updates.is_out_of_stock === true;
+    }
+
+    if (updates.is_coming_soon) {
+      updates.price = 0;
+      updates.discount_price = null;
+      updates.stock = 0;
+    } else {
+      if (updates.price !== undefined && updates.price !== null && updates.price !== '') {
+        updates.price = parseFloat(updates.price);
+      }
+      if (Object.prototype.hasOwnProperty.call(updates, 'discount_price')) {
+        updates.discount_price = (updates.discount_price && updates.discount_price !== "") 
+          ? parseFloat(updates.discount_price) 
+          : null;
+      }
+      if (updates.is_out_of_stock) {
+        updates.stock = 0;
+      } else if (updates.stock !== undefined && updates.stock !== null && updates.stock !== '') {
+        updates.stock = parseInt(updates.stock);
+      }
     }
 
     const { data, error } = await supabase

@@ -259,6 +259,12 @@ function mapLocalPathToUrl(localPath: string, products: any[] = []): string[] {
       if (matchedProduct.finish) {
         url += `&finish=${encodeURIComponent(matchedProduct.finish)}`;
       }
+      if (matchedProduct.is_coming_soon) {
+        url += `&isComingSoon=true`;
+      }
+      if (matchedProduct.is_out_of_stock || matchedProduct.stock === 0) {
+        url += `&isOutOfStock=true`;
+      }
       return url;
     });
   }
@@ -376,6 +382,12 @@ export async function getActiveTilePaths(): Promise<string[]> {
           }
           if (p.category) {
             url += `&category=${encodeURIComponent(p.category)}`;
+          }
+          if (p.is_coming_soon) {
+            url += `&isComingSoon=true`;
+          }
+          if (p.is_out_of_stock || p.stock === 0) {
+            url += `&isOutOfStock=true`;
           }
           return url;
         });

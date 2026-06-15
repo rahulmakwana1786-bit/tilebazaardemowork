@@ -802,7 +802,8 @@ export default function ProductDetailPage({
     finish = productData.finish;
   }
 
-  const isComingSoon = imagePath.includes("comingsoon/") || category === "Coming Soon";
+  const isComingSoon = imagePath.includes("comingsoon/") || category === "Coming Soon" || productData?.is_coming_soon === true;
+  const isOutOfStock = productData?.is_out_of_stock === true || (productData?.stock === 0 && !details.isAccessory);
 
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -1829,6 +1830,13 @@ export default function ProductDetailPage({
                       className="w-full py-4 text-[11px] font-black uppercase tracking-[0.25em] flex items-center justify-center gap-3 bg-gray-50 text-gray-400 border border-gray-100 cursor-not-allowed"
                     >
                       Coming Soon
+                    </button>
+                  ) : isOutOfStock ? (
+                    <button
+                      disabled
+                      className="w-full py-4 text-[11px] font-black uppercase tracking-[0.25em] flex items-center justify-center gap-3 bg-gray-50 text-gray-400 border border-gray-100 cursor-not-allowed"
+                    >
+                      Out of Stock
                     </button>
                   ) : isPoster ? (
                     <Link
