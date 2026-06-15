@@ -273,6 +273,11 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
 
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [showTopBtn, setShowTopBtn] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(12);
+
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [finishFilter, sizeFilter, placementFilter]);
 
   useEffect(() => {
     const handleScroll = () => setShowTopBtn(window.scrollY > 400);
@@ -819,7 +824,7 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
 
       {/* Product Grid (Matching Screenshot & requested design) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-14">
-        {filteredTiles.map((imageName) => {
+        {filteredTiles.slice(0, visibleCount).map((imageName) => {
           const imageNameWithoutQuery = imageName.split("?")[0];
           const fileNameOnly = imageNameWithoutQuery.split("/").pop() || imageNameWithoutQuery;
           const finish = getFinish(fileNameOnly);
@@ -967,6 +972,18 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
           );
         })}
       </div>
+
+      {/* Load More Button */}
+      {filteredTiles.length > visibleCount && (
+        <div className="flex justify-center mt-16 md:mt-24">
+          <button
+            onClick={() => setVisibleCount(filteredTiles.length)}
+            className="bg-[#4a2c2a] text-white px-10 py-5 text-[11px] font-bold uppercase tracking-[0.25em] shadow-xl hover:bg-[#4a2c2a]/90 active:scale-95 transition-all duration-300"
+          >
+            Load More
+          </button>
+        </div>
+      )}
 
       {/* Mobile Overlay */}
       <div
