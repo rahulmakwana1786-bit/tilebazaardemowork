@@ -3,6 +3,18 @@
 import fs from "fs";
 import path from "path";
 
+// In-memory cache variables for improved page load speeds
+let cachedActiveTiles: string[] | null = null;
+let activeTilesTimestamp = 0;
+
+let cachedComingSoonPaths: string[] | null = null;
+let comingSoonTimestamp = 0;
+
+let cachedPreviewPaths: string[] | null = null;
+let previewPathsTimestamp = 0;
+
+const CACHE_TTL_MS = 30 * 1000; // Cache for 30 seconds
+
 export async function getAllTilePaths(): Promise<string[]> {
   const tilesDirectory = path.join(process.cwd(), "public/tiles");
   let allFiles: string[] = [];
@@ -270,6 +282,11 @@ function mapLocalPathToUrl(localPath: string, products: any[] = []): string[] {
 }
 
 export async function getActiveTilePaths(): Promise<string[]> {
+  const now = Date.now();
+  if (cachedActiveTiles && (now - activeTilesTimestamp < CACHE_TTL_MS)) {
+    return cachedActiveTiles;
+  }
+
   const localFiles = await getAllTilePaths();
   const comingSoonFiles = await getAllComingSoonPaths();
   let allFiles: string[] = [];
@@ -277,8 +294,15 @@ export async function getActiveTilePaths(): Promise<string[]> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tilebazaardemowork-production.up.railway.app';
 
   try {
-    // Fetch active products from backend
-    const response = await fetch(`${apiUrl}/api/products`, { cache: 'no-store' });
+    // Fetch active products from backend with a 3-second timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+    const response = await fetch(`${apiUrl}/api/products`, { 
+      cache: 'no-store',
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
     
     if (response.ok) {
       let products = await response.json();
@@ -307,13 +331,27 @@ export async function getActiveTilePaths(): Promise<string[]> {
       if (missingFiles.length > 0) {
         try {
           console.log(`Syncing ${missingFiles.length} missing local products to backend...`);
+          const syncController = new AbortController();
+          const syncTimeoutId = setTimeout(() => syncController.abort(), 3000);
+
           const syncResponse = await fetch(`${apiUrl}/api/products/sync-local`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ paths: missingFiles })
+            body: JSON.stringify({ paths: missingFiles }),
+            signal: syncController.signal
           });
+          clearTimeout(syncTimeoutId);
+
           if (syncResponse.ok) {
-            const refetchedResponse = await fetch(`${apiUrl}/api/products`, { cache: 'no-store' });
+            const refetchController = new AbortController();
+            const refetchTimeoutId = setTimeout(() => refetchController.abort(), 3000);
+
+            const refetchedResponse = await fetch(`${apiUrl}/api/products`, { 
+              cache: 'no-store',
+              signal: refetchController.signal
+            });
+            clearTimeout(refetchTimeoutId);
+
             if (refetchedResponse.ok) {
               products = await refetchedResponse.json();
             }
@@ -379,10 +417,17 @@ export async function getActiveTilePaths(): Promise<string[]> {
 
   allFiles = [...allFiles, ...comingSoonUrls];
 
+  cachedActiveTiles = allFiles;
+  activeTilesTimestamp = now;
   return allFiles;
 }
 
 export async function getAllComingSoonPaths(): Promise<string[]> {
+  const now = Date.now();
+  if (cachedComingSoonPaths && (now - comingSoonTimestamp < CACHE_TTL_MS)) {
+    return cachedComingSoonPaths;
+  }
+
   const comingSoonDirectory = path.join(process.cwd(), "public/comingsoon");
   let allFiles: string[] = [];
 
@@ -425,10 +470,17 @@ export async function getAllComingSoonPaths(): Promise<string[]> {
     }
   }
 
+  cachedComingSoonPaths = allFiles;
+  comingSoonTimestamp = now;
   return allFiles;
 }
 
 export async function getAllPreviewPaths(): Promise<string[]> {
+  const now = Date.now();
+  if (cachedPreviewPaths && (now - previewPathsTimestamp < CACHE_TTL_MS)) {
+    return cachedPreviewPaths;
+  }
+
   const previewsDirectory = path.join(process.cwd(), "public/previews");
   let allFiles: string[] = [];
 
@@ -474,6 +526,8 @@ export async function getAllPreviewPaths(): Promise<string[]> {
     }
   }
 
+  cachedPreviewPaths = allFiles;
+  previewPathsTimestamp = now;
   return allFiles;
 }
 

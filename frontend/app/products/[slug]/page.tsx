@@ -815,6 +815,11 @@ export default function ProductDetailPage({
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [shareMsg, setShareMsg] = useState("");
   const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [displayImagePath]);
+
   const [showMoreDesc, setShowMoreDesc] = useState(false);
   const [showMoreAdhesiveFeats, setShowMoreAdhesiveFeats] = useState(false);
 
@@ -1076,7 +1081,11 @@ export default function ProductDetailPage({
           ════════════════════════════════ */}
           <div className="w-full lg:w-[55%] xl:w-[58%] lg:sticky lg:top-28">
             <div className="relative w-full aspect-square bg-transparent rounded-sm overflow-hidden flex items-center justify-center p-6 md:p-10 transition-all duration-300">
-              {!imgError ? (
+              {!displayImagePath ? (
+                <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm animate-pulse">
+                  Loading image...
+                </div>
+              ) : !imgError ? (
                 <img
                   src={displayImagePath.startsWith("http") ? displayImagePath.split("?")[0] : displayImagePath.startsWith("comingsoon/") ? `/${displayImagePath.split("?")[0].split('/').map(s => encodeURIComponent(s)).join('/')}` : `/tiles/${displayImagePath.split("?")[0].split('/').map(s => encodeURIComponent(s)).join('/')}`}
                   alt={displayName}
@@ -1101,7 +1110,7 @@ export default function ProductDetailPage({
             {!(
               (matchedRightGroup || matchedLeftGroup) &&
               variantPaths.length > 0
-            ) && !isAurlProduct && !isPaveProduct && !isSaltedProduct && (
+            ) && !isAurlProduct && !isPaveProduct && !isSaltedProduct && displayImagePath && (
               <div className="mt-4 flex gap-3">
                 <div className="w-20 h-20 bg-transparent border-2 border-[#4a2c2a] rounded-sm overflow-hidden flex items-center justify-center p-1 flex-shrink-0">
                   <img
