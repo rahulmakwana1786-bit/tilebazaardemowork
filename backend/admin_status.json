@@ -1,9 +1,9 @@
 {
   "jane@tilebazaar.co.uk": {
     "email": "jane@tilebazaar.co.uk",
-    "is_logged_in": false,
-    "last_login": "2026-05-28T09:49:18.964Z",
-    "last_logout": "2026-05-28T10:33:25.052Z"
+    "is_logged_in": true,
+    "last_login": "2026-06-15T12:58:20.104Z",
+    "last_logout": "2026-06-15T12:48:47.188Z"
   },
   "admin2@tilebazaar.co.uk": {
     "email": "admin2@tilebazaar.co.uk",

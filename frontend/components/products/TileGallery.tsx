@@ -11,7 +11,7 @@ interface TileGalleryProps {
   initialPreviews?: string[];
 }
 
-const getFinish = (fileName: string) => {
+const getFinish = (fileName: string, localPath?: string) => {
   const name = fileName.toUpperCase();
   if (name.includes("--GLOSSY") || name.includes("--GLOSS")) return "GLOSSY";
   if (name.includes("--MATT") && !name.includes("--MATTING")) return "MATT";
@@ -21,6 +21,7 @@ const getFinish = (fileName: string) => {
   if (name.includes("--PUNCHGL")) return "POSTER";
   if (name.includes("--LOVIN")) return "LOVELIN";
   if (name.includes("--TPH")) return "TYPHOON";
+  if (localPath && localPath.toLowerCase().includes("1200x1200")) return "GLOSSY";
   return "OTHER";
 };
 
@@ -305,7 +306,7 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
     const baseImages = decodedInitialImages.filter((img) => {
       const fileName = img.split("/").pop() || img;
       const upperName = fileName.toUpperCase();
-      const finish = getFinish(fileName);
+      const finish = getFinish(fileName, img);
       const isAccessory = /TRIM|SPACER|WEDGE|ADHESIVE|GLUE|MATTING|LEVEL/.test(upperName);
 
       // Remove tile images that do not have a recognized finish
@@ -372,7 +373,7 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
       if (images.length > 1) {
         const nonMatt = images.filter(img => {
           const fileName = img.split("/").pop() || img;
-          return getFinish(fileName) !== "MATT";
+          return getFinish(fileName, img) !== "MATT";
         });
         
         if (nonMatt.length > 0) {
@@ -420,7 +421,7 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
       
       if (!isComingSoon) {
         const fileName = img.split("?")[0].split("/").pop() || img;
-        const finish = getFinish(fileName);
+        const finish = getFinish(fileName, img);
         if (finish !== "OTHER") finishes.add(finish);
       }
     });
@@ -434,7 +435,7 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
   const filteredTiles = useMemo(() => {
     return deduplicatedImages.filter((img) => {
       const fileName = img.split("?")[0].split("/").pop() || img;
-      const finish = getFinish(fileName);
+      const finish = getFinish(fileName, img);
       const isComingSoon = img.includes("comingsoon/") || (img.includes("?") && new URLSearchParams(img.split("?")[1]).get("isComingSoon") === "true");
       
       let size = "OTHER";
@@ -827,7 +828,7 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
         {filteredTiles.slice(0, visibleCount).map((imageName) => {
           const imageNameWithoutQuery = imageName.split("?")[0];
           const fileNameOnly = imageNameWithoutQuery.split("/").pop() || imageNameWithoutQuery;
-          const finish = getFinish(fileNameOnly);
+          const finish = getFinish(fileNameOnly, imageName);
           const details = getProductDetails(fileNameOnly);
           const isPoster = fileNameOnly.toUpperCase().includes("POSTER");
           

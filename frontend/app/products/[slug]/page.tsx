@@ -603,10 +603,12 @@ export default function ProductDetailPage({
       if (!matched) {
         const lowerSlug = decodedSlug.toLowerCase();
         let parsedSize = "";
-        if (lowerSlug.includes("600x1200")) parsedSize = "600x1200";
+        if (lowerSlug.includes("1200x1200")) parsedSize = "1200x1200";
+        else if (lowerSlug.includes("600x1200")) parsedSize = "600x1200";
         else if (lowerSlug.includes("600x600")) parsedSize = "600x600";
 
         const cleanedSlug = lowerSlug
+          .replace("1200x1200", "")
           .replace("600x1200", "")
           .replace("600x600", "")
           .replace("glossy", "")
@@ -644,7 +646,10 @@ export default function ProductDetailPage({
           category: up.get("category") || "Accessories",
           finish: up.get("finish") || "Grey",
           size: up.get("size") || "20kg",
-          image: matched.split("?")[0]
+          image: matched.split("?")[0],
+          is_coming_soon: up.get("isComingSoon") === "true",
+          is_out_of_stock: up.get("isOutOfStock") === "true",
+          stock: up.get("isOutOfStock") === "true" ? 0 : 100
         };
         setProductData(mockProduct);
       }
@@ -802,8 +807,8 @@ export default function ProductDetailPage({
     finish = productData.finish;
   }
 
-  const isComingSoon = imagePath.includes("comingsoon/") || category === "Coming Soon" || productData?.is_coming_soon === true;
-  const isOutOfStock = productData?.is_out_of_stock === true || (productData?.stock === 0 && !details.isAccessory);
+  const isComingSoon = imagePath.includes("comingsoon/") || category === "Coming Soon" || productData?.is_coming_soon === true || (imagePath.includes("?") && new URLSearchParams(imagePath.split("?")[1]).get("isComingSoon") === "true");
+  const isOutOfStock = productData?.is_out_of_stock === true || (productData?.stock === 0 && !details.isAccessory) || (imagePath.includes("?") && new URLSearchParams(imagePath.split("?")[1]).get("isOutOfStock") === "true");
 
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -1780,7 +1785,7 @@ export default function ProductDetailPage({
             )}
 
             {/* ── Pricing & Cart Section ── */}
-            {details.isAccessory || isPoster || !(dimension.toLowerCase().includes("600x600") || dimension.toLowerCase().includes("600x1200") || dimension.toLowerCase().includes("300x600")) ? (
+            {details.isAccessory || isPoster || !(dimension.toLowerCase().includes("600x600") || dimension.toLowerCase().includes("600x1200") || dimension.toLowerCase().includes("300x600") || dimension.toLowerCase().includes("1200x1200")) ? (
               <>
                 {/* ── Old Pricing ── */}
                 {isPoster ? (
@@ -1938,6 +1943,15 @@ export default function ProductDetailPage({
                       className="w-full py-4 text-[11px] font-black uppercase tracking-[0.25em] flex items-center justify-center gap-3 bg-gray-50 text-gray-400 border border-gray-100 cursor-not-allowed"
                     >
                       Coming Soon
+                    </button>
+                  </div>
+                ) : isOutOfStock ? (
+                  <div className="mb-8">
+                    <button
+                      disabled
+                      className="w-full py-4 text-[11px] font-black uppercase tracking-[0.25em] flex items-center justify-center gap-3 bg-gray-50 text-gray-400 border border-gray-100 cursor-not-allowed"
+                    >
+                      Out of Stock
                     </button>
                   </div>
                 ) : (

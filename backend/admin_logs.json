@@ -1,5 +1,50 @@
 [
   {
+    "id": "g1hfb48tk",
+    "admin_email": "jane@tilebazaar.co.uk",
+    "admin_name": "Jane Smith",
+    "action": "LOGOUT",
+    "details": "Logged out of the system",
+    "page": "/admin",
+    "created_at": "2026-06-15T12:48:47.178Z"
+  },
+  {
+    "id": "ppl5j4man",
+    "admin_email": "jane@tilebazaar.co.uk",
+    "admin_name": "Jane Smith",
+    "action": "LOGOUT",
+    "details": "Logged out of the system",
+    "page": "/admin",
+    "created_at": "2026-06-15T12:44:32.718Z"
+  },
+  {
+    "id": "6nge9w3an",
+    "admin_email": "jane@tilebazaar.co.uk",
+    "admin_name": "Jane Smith",
+    "action": "UPDATE_PRODUCT",
+    "details": "Updated product: Lux 09 Hl1 (ID: 83bdd089-4238-40fa-95f6-1ef9fe840f49)",
+    "page": "/admin/products",
+    "created_at": "2026-06-15T12:41:44.555Z"
+  },
+  {
+    "id": "a3jwemtq5",
+    "admin_email": "jane@tilebazaar.co.uk",
+    "admin_name": "Jane Smith",
+    "action": "LOGOUT",
+    "details": "Logged out of the system",
+    "page": "/admin",
+    "created_at": "2026-06-15T12:41:07.479Z"
+  },
+  {
+    "id": "6m8yen0o0",
+    "admin_email": "jane@tilebazaar.co.uk",
+    "admin_name": "Jane Smith",
+    "action": "LOGIN",
+    "details": "Admin logged in successfully",
+    "page": "/admin",
+    "created_at": "2026-06-15T12:40:08.315Z"
+  },
+  {
     "id": "bnmw792kk",
     "admin_email": "admin4@tilebazaar.co.uk",
     "admin_name": "Admin 4",

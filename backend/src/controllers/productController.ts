@@ -142,7 +142,7 @@ function getFilesRecursively(dir: string, baseDir: string): string[] {
   return results;
 }
 
-const getFinishFromFilename = (fileName: string): string => {
+const getFinishFromFilename = (fileName: string, localPath?: string): string => {
   const name = fileName.toUpperCase();
   if (name.includes("--GLOSSY") || name.includes("--GLOSS")) return "GLOSSY";
   if (name.includes("--MATT") && !name.includes("--MATTING")) return "MATT";
@@ -152,6 +152,7 @@ const getFinishFromFilename = (fileName: string): string => {
   if (name.includes("--PUNCHGL")) return "POSTER";
   if (name.includes("--LOVIN")) return "LOVELIN";
   if (name.includes("--TPH")) return "TYPHOON";
+  if (localPath && localPath.toLowerCase().includes("1200x1200")) return "GLOSSY";
   return "OTHER";
 };
 
@@ -274,7 +275,7 @@ const syncLocalDirectoryDirectly = async () => {
     const productsToSync = [];
     for (const relativePath of localFiles) {
       const filename = relativePath.split('/').pop() || relativePath;
-      const finish = getFinishFromFilename(filename);
+      const finish = getFinishFromFilename(filename, relativePath);
       const isAccessory = /TRIM|SPACER|WEDGE|ADHESIVE|GLUE|MATTING|LEVEL/.test(filename.toUpperCase());
 
       if (!isAccessory && finish === "OTHER") continue;
@@ -370,7 +371,7 @@ export const syncLocalProducts = async (req: Request, res: Response) => {
     const results = [];
     for (const relativePath of paths) {
       const filename = relativePath.split('/').pop() || relativePath;
-      const finish = getFinishFromFilename(filename);
+      const finish = getFinishFromFilename(filename, relativePath);
       const isAccessory = /TRIM|SPACER|WEDGE|ADHESIVE|GLUE|MATTING|LEVEL/.test(filename.toUpperCase());
 
       if (!isAccessory && finish === "OTHER") {

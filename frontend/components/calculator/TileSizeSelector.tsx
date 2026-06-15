@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 export const PRESET_SIZES = [
   { label: "600x600", length: 600, width: 600, unit: "mm" },
   { label: "600x1200", length: 1200, width: 600, unit: "mm" },
+  { label: "1200x1200", length: 1200, width: 1200, unit: "mm" },
 ];
 
 interface TileSizeSelectorProps {

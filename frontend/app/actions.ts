@@ -81,7 +81,7 @@ function formatFileName(name: string): string {
   return clean;
 }
 
-function getFinish(fileName: string): string {
+function getFinish(fileName: string, localPath?: string): string {
   const name = fileName.toUpperCase();
   if (name.includes("TRIM")) {
     if (name.includes("BRUSHED BRASS")) return "Brushed Brass Effect";
@@ -110,6 +110,7 @@ function getFinish(fileName: string): string {
   if (name.includes("--PUNCHGL")) return "POSTER";
   if (name.includes("--LOVIN")) return "LOVELIN";
   if (name.includes("--TPH")) return "TYPHOON";
+  if (localPath && localPath.toLowerCase().includes("1200x1200")) return "GLOSSY";
   return "OTHER";
 }
 
@@ -275,7 +276,7 @@ function mapLocalPathToUrl(localPath: string, products: any[] = []): string[] {
   const fallbackCategory = getCategory(localPath);
   const fallbackDetails = getProductDetails(basename);
   const fallbackSize = getSize(localPath, basename);
-  const fallbackFinish = getFinish(basename);
+  const fallbackFinish = getFinish(basename, localPath);
 
   let url = `${localPath}?name=${encodeURIComponent(cleanName)}&price=${fallbackDetails.price}&slug=${fallbackSlug}&category=${encodeURIComponent(fallbackCategory)}`;
   if (fallbackSize && fallbackSize !== "accessories") {
@@ -415,7 +416,7 @@ export async function getActiveTilePaths(): Promise<string[]> {
     const fallbackSlug = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const fallbackCategory = "Coming Soon";
     const size = getSize(localPath, basename);
-    const finish = getFinish(basename);
+    const finish = getFinish(basename, localPath);
 
     let url = `${localPath}?name=${encodeURIComponent(cleanName)}&price=0&slug=${fallbackSlug}&category=${encodeURIComponent(fallbackCategory)}`;
     if (size && size !== "accessories") {

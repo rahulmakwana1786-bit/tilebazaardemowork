@@ -49,9 +49,11 @@ export default function TilePackCalculator({
   // If the size is 600x600, there are 4 pieces per box (1.44 / 0.36 = 4)
   // If 300x600, there are 8 pieces per box (1.44 / 0.18 = 8)
   // If 600x1200, there are 2 pieces per box (1.44 / 0.72 = 2)
+  // If 1200x1200, there is 1 piece per box (1.44 / 1.44 = 1)
   const is600x600 = size.toLowerCase().includes("600x600");
   const is300x600 = size.toLowerCase().includes("300x600");
-  const piecesPerBox = is600x600 ? 4 : (is300x600 ? 8 : 2);
+  const is1200x1200 = size.toLowerCase().includes("1200x1200");
+  const piecesPerBox = is600x600 ? 4 : (is300x600 ? 8 : (is1200x1200 ? 1 : 2));
 
   const handleQtyChange = (boxCount: number, delta: number) => {
     setCustomPieces(""); // clear custom pieces
