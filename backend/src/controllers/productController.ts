@@ -252,8 +252,16 @@ const getPriceFromFilename = (fileName: string): { price: number; discount_price
   return { price: 15, discount_price: null };
 };
 
+let lastSyncTime = 0;
+const SYNC_THROTTLE_MS = 60 * 60 * 1000; // 1 hour
+
 const syncLocalDirectoryDirectly = async () => {
   try {
+    const now = Date.now();
+    if (now - lastSyncTime < SYNC_THROTTLE_MS) {
+      return;
+    }
+    lastSyncTime = now;
     let tilesDir = path.resolve(process.cwd(), '../frontend/public/tiles');
     if (!fs.existsSync(tilesDir)) {
       tilesDir = path.resolve(process.cwd(), 'frontend/public/tiles');

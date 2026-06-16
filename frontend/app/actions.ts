@@ -13,9 +13,17 @@ let comingSoonTimestamp = 0;
 let cachedPreviewPaths: string[] | null = null;
 let previewPathsTimestamp = 0;
 
-const CACHE_TTL_MS = 30 * 1000; // Cache for 30 seconds
+let cachedTilePaths: string[] | null = null;
+let tilePathsTimestamp = 0;
+
+const CACHE_TTL_MS = 3 * 60 * 1000; // Cache for 3 minutes
 
 export async function getAllTilePaths(): Promise<string[]> {
+  const now = Date.now();
+  if (cachedTilePaths && (now - tilePathsTimestamp < CACHE_TTL_MS)) {
+    return cachedTilePaths;
+  }
+
   const tilesDirectory = path.join(process.cwd(), "public/tiles");
   let allFiles: string[] = [];
 
@@ -41,6 +49,8 @@ export async function getAllTilePaths(): Promise<string[]> {
 
   try {
     allFiles = getFilesRecursively(tilesDirectory);
+    cachedTilePaths = allFiles;
+    tilePathsTimestamp = now;
   } catch (e) {
     console.error("Error reading tiles directory:", e);
   }
@@ -315,61 +325,6 @@ export async function getActiveTilePaths(): Promise<string[]> {
     if (response.ok) {
       let products = await response.json();
       dbProducts = products;
-
-      // Check for local files that are missing from products list
-      const missingFiles: string[] = [];
-      localFiles.forEach(localPath => {
-        const basename = localPath.split('/').pop() || localPath;
-        const matched = products.find((p: any) => {
-          if (p.image && p.image.toLowerCase() === basename.toLowerCase()) {
-            const localSize = getSize(localPath, basename);
-            const prodSize = p.size;
-            if (localSize && prodSize) {
-              const normLocal = localSize.toLowerCase().replace(/[^a-z0-9]/g, "");
-              const normProd = prodSize.toLowerCase().replace(/[^a-z0-9]/g, "");
-              if (normLocal === normProd) return true;
-            }
-          }
-          return false;
-        });
-        if (!matched) {
-          missingFiles.push(localPath);
-        }
-      });
-
-      if (missingFiles.length > 0) {
-        try {
-          console.log(`Syncing ${missingFiles.length} missing local products to backend...`);
-          const syncController = new AbortController();
-          const syncTimeoutId = setTimeout(() => syncController.abort(), 3000);
-
-          const syncResponse = await fetch(`${apiUrl}/api/products/sync-local`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ paths: missingFiles }),
-            signal: syncController.signal
-          });
-          clearTimeout(syncTimeoutId);
-
-          if (syncResponse.ok) {
-            const refetchController = new AbortController();
-            const refetchTimeoutId = setTimeout(() => refetchController.abort(), 3000);
-
-            const refetchedResponse = await fetch(`${apiUrl}/api/products`, { 
-              cache: 'no-store',
-              signal: refetchController.signal
-            });
-            clearTimeout(refetchTimeoutId);
-
-            if (refetchedResponse.ok) {
-              products = await refetchedResponse.json();
-              dbProducts = products;
-            }
-          }
-        } catch (syncError) {
-          console.error("Error syncing missing local products to backend:", syncError);
-        }
-      }
 
       allFiles = localFiles.flatMap(localPath => mapLocalPathToUrl(localPath, products));
 
