@@ -195,9 +195,18 @@ const getProductImagePath = (product: any) => {
   if (!product || !product.image) return "/placeholder-tile.jpg";
   if (product.image.startsWith("http")) return product.image;
   if (product.image.startsWith("/")) return product.image;
+  if (product.image.toLowerCase().includes("comingsoon/")) {
+    return product.image.startsWith("/") ? product.image : `/${product.image}`;
+  }
   
   const category = (product.category || "").toLowerCase();
   const size = (product.size || "").toLowerCase();
+  const isComingSoon = product.is_coming_soon || category === "coming soon";
+  
+  if (isComingSoon && size === "600x1200") {
+    return `/comingsoon/600x1200/${product.image}`;
+  }
+  
   const imgName = product.image.toUpperCase();
   
   if (category === "accessories" || imgName.includes("TRIM") || imgName.includes("SPACER") || imgName.includes("WEDGE") || imgName.includes("MATTING") || imgName.includes("LEVEL") || imgName.includes("ADHESIVE") || imgName.includes("GLUE")) {
@@ -374,30 +383,46 @@ export default function AdminProductDetails() {
           </div>
           
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-sm">
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold">
-              <span className="text-gray-400">Visibility:</span>
-              <button 
-                onClick={handleToggleVisibility}
-                disabled={isToggling}
-                title="Click to toggle visibility on storefront"
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm border font-bold text-[9px] uppercase tracking-wider transition-all hover:scale-105 active:scale-95 ${
-                  currentProduct.is_active 
-                    ? "bg-green-50/50 border-green-200 text-green-700 hover:bg-green-100/50" 
-                    : "bg-red-50/50 border-red-200 text-red-700 hover:bg-red-100/50"
-                }`}
-              >
-                {currentProduct.is_active ? (
-                  <>
-                    <IoCheckmarkCircleOutline size={14} className="text-green-600" />
-                    Live on Shop
-                  </>
-                ) : (
-                  <>
-                    <IoCloseCircleOutline size={14} className="text-red-500" />
-                    Hidden
-                  </>
-                )}
-              </button>
+            <div className="flex flex-wrap items-center gap-4 text-[10px] uppercase tracking-widest font-bold">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400">Visibility:</span>
+                <button 
+                  onClick={handleToggleVisibility}
+                  disabled={isToggling}
+                  title="Click to toggle visibility on storefront"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm border font-bold text-[9px] uppercase tracking-wider transition-all hover:scale-105 active:scale-95 ${
+                    currentProduct.is_active 
+                      ? "bg-green-50/50 border-green-200 text-green-700 hover:bg-green-100/50" 
+                      : "bg-red-50/50 border-red-200 text-red-700 hover:bg-red-100/50"
+                  }`}
+                >
+                  {currentProduct.is_active ? (
+                    <>
+                      <IoCheckmarkCircleOutline size={14} className="text-green-600" />
+                      Live on Shop
+                    </>
+                  ) : (
+                    <>
+                      <IoCloseCircleOutline size={14} className="text-red-500" />
+                      Hidden
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {currentProduct.is_coming_soon && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-amber-200 bg-amber-50 text-amber-700 font-bold text-[9px] uppercase tracking-wider">
+                  <IoColorWandOutline size={14} className="text-amber-500 animate-pulse" />
+                  Coming Soon
+                </div>
+              )}
+
+              {currentProduct.is_out_of_stock && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-red-200 bg-red-50 text-red-700 font-bold text-[9px] uppercase tracking-wider">
+                  <IoCloseCircleOutline size={14} className="text-red-500" />
+                  Out of Stock
+                </div>
+              )}
             </div>
             <span className="text-[10px] text-gray-300 font-mono">{id}</span>
           </div>

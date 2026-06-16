@@ -133,9 +133,18 @@ const getProductImagePath = (product: any) => {
   if (!product || !product.image) return "/placeholder-tile.jpg";
   if (product.image.startsWith("http")) return product.image;
   if (product.image.startsWith("/")) return product.image;
+  if (product.image.toLowerCase().includes("comingsoon/")) {
+    return product.image.startsWith("/") ? product.image : `/${product.image}`;
+  }
   
   const category = (product.category || "").toLowerCase();
   const size = (product.size || "").toLowerCase();
+  const isComingSoon = product.is_coming_soon || category === "coming soon";
+  
+  if (isComingSoon && size === "600x1200") {
+    return `/comingsoon/600x1200/${product.image}`;
+  }
+  
   const imgName = product.image.toUpperCase();
   
   if (category === "accessories" || imgName.includes("TRIM") || imgName.includes("SPACER") || imgName.includes("WEDGE") || imgName.includes("MATTING") || imgName.includes("LEVEL") || imgName.includes("ADHESIVE") || imgName.includes("GLUE")) {

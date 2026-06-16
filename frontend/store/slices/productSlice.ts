@@ -89,6 +89,8 @@ export interface Product {
   material: string;
   image: string;
   is_active: boolean;
+  is_coming_soon?: boolean;
+  is_out_of_stock?: boolean;
   created_at?: string;
 }
 

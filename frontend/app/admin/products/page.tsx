@@ -19,9 +19,18 @@ const getProductImagePath = (product: any) => {
   if (!product || !product.image) return "/placeholder-tile.jpg";
   if (product.image.startsWith("http")) return product.image;
   if (product.image.startsWith("/")) return product.image;
+  if (product.image.toLowerCase().includes("comingsoon/")) {
+    return product.image.startsWith("/") ? product.image : `/${product.image}`;
+  }
   
   const category = (product.category || "").toLowerCase();
   const size = (product.size || "").toLowerCase();
+  const isComingSoon = product.is_coming_soon || category === "coming soon";
+  
+  if (isComingSoon && size === "600x1200") {
+    return `/comingsoon/600x1200/${product.image}`;
+  }
+  
   const imgName = product.image.toUpperCase();
   
   if (category === "accessories" || imgName.includes("TRIM") || imgName.includes("SPACER") || imgName.includes("WEDGE") || imgName.includes("MATTING") || imgName.includes("LEVEL") || imgName.includes("ADHESIVE") || imgName.includes("GLUE")) {
@@ -137,7 +146,8 @@ export default function AdminProductsPage() {
           ? p.category?.toLowerCase() === "accessories" 
           : p.size?.toLowerCase() === filterSize.toLowerCase());
       const matchesStatus = filterStatus === "All" || 
-        (filterStatus === "Active" ? p.is_active : !p.is_active);
+        (filterStatus === "Coming Soon" ? p.is_coming_soon :
+         filterStatus === "Active" ? (p.is_active && !p.is_coming_soon) : (!p.is_active && !p.is_coming_soon));
       
       return matchesSearch && matchesFinish && matchesSize && matchesStatus;
     })
@@ -227,6 +237,7 @@ export default function AdminProductsPage() {
           <option value="All">All Status</option>
           <option value="Active">Active / Live</option>
           <option value="Inactive">Archived</option>
+          <option value="Coming Soon">Coming Soon</option>
         </select>
 
         <select 
@@ -318,9 +329,15 @@ export default function AdminProductsPage() {
                   </td>
                   <td>
                     <div className="flex items-center gap-2">
-                      <div className={`w-1.5 h-1.5 rounded-full ${product.is_active ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-gray-300'}`}></div>
-                      <span className={`text-[9px] font-bold uppercase tracking-widest ${product.is_active ? 'text-gray-900' : 'text-gray-300'}`}>
-                        {product.is_active ? 'Active' : 'Archived'}
+                      <div className={`w-1.5 h-1.5 rounded-full ${
+                        product.is_coming_soon ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]' :
+                        product.is_active ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-gray-300'
+                      }`}></div>
+                      <span className={`text-[9px] font-bold uppercase tracking-widest ${
+                        product.is_coming_soon ? 'text-amber-600' :
+                        product.is_active ? 'text-gray-900' : 'text-gray-300'
+                      }`}>
+                        {product.is_coming_soon ? 'Coming Soon' : product.is_active ? 'Active' : 'Archived'}
                       </span>
                     </div>
                   </td>
@@ -344,8 +361,13 @@ export default function AdminProductsPage() {
                <div className="relative aspect-square mb-4 bg-gray-50 rounded-sm overflow-hidden">
                   <Image src={getProductImagePath(product)} alt={product.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
                   <div className="absolute top-3 left-3 bg-white/95 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-[#4a2c2a] shadow-sm">
-                    {product.finish}
+                    {product.finish || 'Coming Soon'}
                   </div>
+                  {product.is_coming_soon && (
+                    <div className="absolute top-3 right-3 bg-amber-500 text-white px-2 py-1 text-[8px] font-black uppercase tracking-widest shadow-sm rounded-sm animate-pulse">
+                      Coming Soon
+                    </div>
+                  )}
                </div>
                <div className="text-center">
                   <h3 className="text-[11px] font-bold uppercase tracking-wider mb-1 truncate">{product.name}</h3>

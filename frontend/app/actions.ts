@@ -299,6 +299,7 @@ export async function getActiveTilePaths(): Promise<string[]> {
   let allFiles: string[] = [];
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tilebazaardemowork-production.up.railway.app';
+  let dbProducts: any[] = [];
 
   try {
     // Fetch active products from backend with a 3-second timeout
@@ -313,6 +314,7 @@ export async function getActiveTilePaths(): Promise<string[]> {
     
     if (response.ok) {
       let products = await response.json();
+      dbProducts = products;
 
       // Check for local files that are missing from products list
       const missingFiles: string[] = [];
@@ -361,6 +363,7 @@ export async function getActiveTilePaths(): Promise<string[]> {
 
             if (refetchedResponse.ok) {
               products = await refetchedResponse.json();
+              dbProducts = products;
             }
           }
         } catch (syncError) {
@@ -412,6 +415,40 @@ export async function getActiveTilePaths(): Promise<string[]> {
   // Map and append Coming Soon files
   const comingSoonUrls = comingSoonFiles.flatMap(localPath => {
     const basename = localPath.split('/').pop() || localPath;
+    
+    // Check if there is a database product matching this coming soon filename
+    const matchedProduct = dbProducts.find((p: any) => {
+      if (!p.image) return false;
+      const dbFilename = p.image.includes('/') ? p.image.split('/').pop() : p.image;
+      return dbFilename.toLowerCase() === basename.toLowerCase();
+    });
+
+    if (matchedProduct) {
+      let url = `${localPath}?name=${encodeURIComponent(matchedProduct.name)}&price=${matchedProduct.price}`;
+      if (matchedProduct.slug) {
+        url += `&slug=${matchedProduct.slug}`;
+      }
+      if (matchedProduct.discount_price !== undefined && matchedProduct.discount_price !== null) {
+        url += `&discountPrice=${matchedProduct.discount_price}`;
+      }
+      if (matchedProduct.category) {
+        url += `&category=${encodeURIComponent(matchedProduct.category)}`;
+      }
+      if (matchedProduct.size) {
+        url += `&size=${encodeURIComponent(matchedProduct.size)}`;
+      }
+      if (matchedProduct.finish) {
+        url += `&finish=${encodeURIComponent(matchedProduct.finish)}`;
+      }
+      if (matchedProduct.is_coming_soon) {
+        url += `&isComingSoon=true`;
+      }
+      if (matchedProduct.is_out_of_stock || matchedProduct.stock === 0) {
+        url += `&isOutOfStock=true`;
+      }
+      return [url];
+    }
+
     const cleanName = formatFileName(basename);
     const fallbackSlug = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const fallbackCategory = "Coming Soon";
