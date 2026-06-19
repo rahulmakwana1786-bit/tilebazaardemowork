@@ -1,5 +1,473 @@
 [
   {
+    "id": "2jh1z1i3g",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: d05d4250-4976-4fd9-8b47-5dc1d01c3438",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T07:05:49.685Z"
+  },
+  {
+    "id": "kl071q3i6",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 4de443e3-54ed-40d1-9e13-1f0b7b6568b6",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T07:05:40.558Z"
+  },
+  {
+    "id": "teqyud1jp",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 7c8f79af-fb0a-4624-a8bf-dd41f7e0692b",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T07:05:32.889Z"
+  },
+  {
+    "id": "8i7ebvr2g",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 696a8953-11d1-4f93-90d2-89224bb20c03",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T07:05:19.829Z"
+  },
+  {
+    "id": "vgn52ndry",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: b1be73ff-9cb3-4ced-8301-e4a84e48a9d1",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T07:05:10.760Z"
+  },
+  {
+    "id": "cdadq40wf",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "UPDATE_PRODUCT",
+    "details": "Updated product: SNOW WHITE  (ID: 49c15765-3728-428f-a8a2-ddddae323196)",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T07:04:49.124Z"
+  },
+  {
+    "id": "r8zzm15p8",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: cf8ad356-e0b3-4f4f-9974-d553a90d96cf",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T07:04:19.942Z"
+  },
+  {
+    "id": "q780esjxh",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: ef800531-b1b6-4954-a031-45b1c758286c",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T07:04:10.389Z"
+  },
+  {
+    "id": "77lf4qoqw",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 0eeebe6e-dbe3-4fc2-9ed2-58db3ebfd14f",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T07:04:01.658Z"
+  },
+  {
+    "id": "ww0i1y0ok",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 29c545e1-8fa1-4681-bee9-a84fad5e3492",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T07:03:14.291Z"
+  },
+  {
+    "id": "it0e1zvmr",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 7a3be760-15bf-4b99-a0bf-179197af227a",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T07:03:03.128Z"
+  },
+  {
+    "id": "t9p0lcswj",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "UPDATE_PRODUCT",
+    "details": "Updated product: PASSION PULPIS BIANCO  (ID: 94470580-2930-44e2-ab08-04a3024dc034)",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T07:02:50.745Z"
+  },
+  {
+    "id": "f0pwlgkii",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 2ad54533-2419-4fb4-81f8-be180d47173d",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T07:01:10.735Z"
+  },
+  {
+    "id": "cmiq4h663",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 90368328-efcd-4879-b6cc-e70849a159af",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T07:01:00.779Z"
+  },
+  {
+    "id": "8usxvco99",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "UPDATE_PRODUCT",
+    "details": "Updated product: ORIOL AQUA  (ID: e0e06024-8c70-4dfe-8ed4-3427f29f77e7)",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T07:00:46.440Z"
+  },
+  {
+    "id": "u0fsmgnsg",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: ea763fc8-26b9-437b-a9b9-ef2a7bb7da56",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T07:00:23.998Z"
+  },
+  {
+    "id": "qw4pg5lxt",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: ae07b55b-7e69-4111-a2d6-f4699b2189f7",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T07:00:17.246Z"
+  },
+  {
+    "id": "zr0ea7241",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 9b0e7451-a338-4a02-adf2-bdbaee04ae1c",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T06:59:59.525Z"
+  },
+  {
+    "id": "rolpezemn",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 87c7fc4a-4edf-46f0-8a39-bccfb1641c2f",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T06:59:48.166Z"
+  },
+  {
+    "id": "5lwckkqw4",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 70d3af33-5160-402d-88b0-ea9d9d15eef2",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T06:59:12.782Z"
+  },
+  {
+    "id": "njiahd6py",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 1e4626b9-93ae-4ab5-9c0d-55dd1b6f53a4",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T06:59:02.083Z"
+  },
+  {
+    "id": "r1l5z3e1z",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 06f09be4-57e0-44b4-9f77-a9365da34502",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T06:58:48.868Z"
+  },
+  {
+    "id": "4k1w5p5ju",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "UPDATE_PRODUCT",
+    "details": "Updated product: MARBLE CARRARA (ID: d93477e1-de9e-43fe-8f48-402402ce3847)",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T06:58:31.165Z"
+  },
+  {
+    "id": "n51anutdp",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: e8a3d936-af27-4f36-b624-627484d2de72",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T06:56:15.920Z"
+  },
+  {
+    "id": "b36oqlsz3",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 55ed2407-6f28-415a-a7b3-5622427b16d2",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T06:55:22.527Z"
+  },
+  {
+    "id": "3mgj0tigs",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "UPDATE_PRODUCT",
+    "details": "Updated product: CREMA MARFIL NEO (ID: 258948db-3422-4bfb-b8ab-3034f07a410e)",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T06:55:00.017Z"
+  },
+  {
+    "id": "ekixf57ff",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "LOGOUT",
+    "details": "Logged out of the system",
+    "page": "/admin",
+    "created_at": "2026-06-19T06:15:15.017Z"
+  },
+  {
+    "id": "o4zzubum1",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "LOGOUT",
+    "details": "Logged out of the system",
+    "page": "/admin",
+    "created_at": "2026-06-19T06:11:59.149Z"
+  },
+  {
+    "id": "b78e2t0rp",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "LOGOUT",
+    "details": "Logged out of the system",
+    "page": "/admin",
+    "created_at": "2026-06-19T05:34:09.965Z"
+  },
+  {
+    "id": "m13f4dozb",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "LOGOUT",
+    "details": "Logged out of the system",
+    "page": "/admin",
+    "created_at": "2026-06-19T05:12:37.080Z"
+  },
+  {
+    "id": "mbmxkr00o",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 5e9fa839-f889-4274-a741-cbea1d0c3983",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T04:33:41.301Z"
+  },
+  {
+    "id": "62d0q1ayo",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 3f6f9e91-fe36-42e3-8c23-c5911c1d80b0",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T04:33:37.163Z"
+  },
+  {
+    "id": "uae78cyz7",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 114c680e-ffe9-4e6a-8484-ef5befb5443b",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T04:33:32.504Z"
+  },
+  {
+    "id": "ap9jmxnrx",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 6a3c8a8a-7ecc-44a7-93e7-fcbb0fb4f081",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T04:33:27.950Z"
+  },
+  {
+    "id": "93w902pb0",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 02d43c8d-2952-4a5c-9711-84666ce2ce0d",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T04:33:21.482Z"
+  },
+  {
+    "id": "eirqhd7bu",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: e4f2f238-4524-43f7-b7da-cd9211ef2df8",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T04:33:16.348Z"
+  },
+  {
+    "id": "ogzj5yjtf",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 5456df7c-f37d-47e5-bf4f-49f5f2c1acb2",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T04:33:07.522Z"
+  },
+  {
+    "id": "dw4hdehu9",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: e25ebafa-0977-4069-aa7f-bb5be7013407",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T04:32:40.337Z"
+  },
+  {
+    "id": "t1yhupopz",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: e2b3d634-1c79-476e-a4f6-37dd17f4ee3f",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T04:32:36.114Z"
+  },
+  {
+    "id": "1uuz5t9k9",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: b803c020-de9e-4806-b79b-b12100c2f81b",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T04:32:31.252Z"
+  },
+  {
+    "id": "h00c9crnx",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 9629d982-4a42-478b-bfef-dea299d7ce32",
+    "page": "/admin/products",
+    "created_at": "2026-06-19T04:32:26.761Z"
+  },
+  {
+    "id": "ba7m9yjha",
+    "admin_email": "admin2@tilebazaar.co.uk",
+    "admin_name": "David Thompson",
+    "action": "LOGIN",
+    "details": "Admin logged in successfully",
+    "page": "/admin",
+    "created_at": "2026-06-19T04:27:43.691Z"
+  },
+  {
+    "id": "neb5yyn22",
+    "admin_email": "jane@tilebazaar.co.uk",
+    "admin_name": "Jane Smith",
+    "action": "LOGOUT",
+    "details": "Logged out of the system",
+    "page": "/admin",
+    "created_at": "2026-06-18T12:44:16.090Z"
+  },
+  {
+    "id": "dd65rl2jp",
+    "admin_email": "jane@tilebazaar.co.uk",
+    "admin_name": "Jane Smith",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 25a9ac71-dbd2-40b7-a76a-f232c899ac5f",
+    "page": "/admin/products",
+    "created_at": "2026-06-18T12:38:19.183Z"
+  },
+  {
+    "id": "0jaycu6vm",
+    "admin_email": "jane@tilebazaar.co.uk",
+    "admin_name": "Jane Smith",
+    "action": "LOGOUT",
+    "details": "Logged out of the system",
+    "page": "/admin",
+    "created_at": "2026-06-18T12:35:48.561Z"
+  },
+  {
+    "id": "9hcpzruxw",
+    "admin_email": "jane@tilebazaar.co.uk",
+    "admin_name": "Jane Smith",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 59739655-c7a8-4984-978e-f91f30b574c5",
+    "page": "/admin/products",
+    "created_at": "2026-06-18T12:35:32.687Z"
+  },
+  {
+    "id": "xxo48t8e4",
+    "admin_email": "jane@tilebazaar.co.uk",
+    "admin_name": "Jane Smith",
+    "action": "LOGOUT",
+    "details": "Logged out of the system",
+    "page": "/admin",
+    "created_at": "2026-06-18T12:34:33.029Z"
+  },
+  {
+    "id": "khkmkre6t",
+    "admin_email": "jane@tilebazaar.co.uk",
+    "admin_name": "Jane Smith",
+    "action": "DELETE_PRODUCT",
+    "details": "Deleted product ID: 0db0a66d-6c30-4003-a868-2d77086a630f",
+    "page": "/admin/products",
+    "created_at": "2026-06-18T12:32:16.385Z"
+  },
+  {
+    "id": "3jatz3bmo",
+    "admin_email": "jane@tilebazaar.co.uk",
+    "admin_name": "Jane Smith",
+    "action": "LOGOUT",
+    "details": "Logged out of the system",
+    "page": "/admin",
+    "created_at": "2026-06-18T12:18:47.267Z"
+  },
+  {
+    "id": "p40286rwk",
+    "admin_email": "jane@tilebazaar.co.uk",
+    "admin_name": "Jane Smith",
+    "action": "UPDATE_PRODUCT",
+    "details": "Updated product: BIANCO STRITO (ID: b98bb757-3d79-4017-9e2b-245a35ac375c)",
+    "page": "/admin/products",
+    "created_at": "2026-06-18T12:18:36.268Z"
+  },
+  {
+    "id": "th5t8h1xr",
+    "admin_email": "jane@tilebazaar.co.uk",
+    "admin_name": "Jane Smith",
+    "action": "LOGOUT",
+    "details": "Logged out of the system",
+    "page": "/admin",
+    "created_at": "2026-06-18T12:17:02.844Z"
+  },
+  {
+    "id": "hz1qrk4wi",
+    "admin_email": "jane@tilebazaar.co.uk",
+    "admin_name": "Jane Smith",
+    "action": "LOGIN",
+    "details": "Admin logged in successfully",
+    "page": "/admin",
+    "created_at": "2026-06-18T12:15:23.058Z"
+  },
+  {
     "id": "y0hizcyjp",
     "admin_email": "admin2@tilebazaar.co.uk",
     "admin_name": "David Thompson",

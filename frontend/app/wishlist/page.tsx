@@ -171,8 +171,10 @@ export default function WishlistPage() {
       const sizeParam = params.get("size");
 
       const name = nameParam ? decodeURIComponent(nameParam) : formatFileName(fileNameOnly);
-      const price = priceParam ? parseFloat(priceParam) : details.price;
-      const discountPrice = discountParam ? parseFloat(discountParam) : (details.isAccessory ? 0 : price + 5);
+      const basePrice = priceParam ? parseFloat(priceParam) : details.price;
+      const parsedDiscount = discountParam ? parseFloat(discountParam) : 0;
+      const price = parsedDiscount > 0 ? parsedDiscount : basePrice;
+      const discountPrice = parsedDiscount > 0 ? basePrice : (details.isAccessory ? 0 : basePrice + 5);
       const category = categoryParam ? decodeURIComponent(categoryParam) : getCategory(fileNameOnly);
       const size = sizeParam ? decodeURIComponent(sizeParam) : (fullPath.split("/")[0] || "N/A");
 

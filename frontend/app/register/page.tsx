@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { registerUser, googleRegisterUser } from '@/store/slices/authSlice';
+import { registerUser, googleRegisterUser, googleLoginUser } from '@/store/slices/authSlice';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
@@ -69,8 +69,19 @@ export default function RegisterPage() {
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     if (credentialResponse.credential) {
-      setGoogleToken(credentialResponse.credential);
       setValidationError('');
+      const result = await dispatch(googleLoginUser(credentialResponse.credential));
+      if (googleLoginUser.fulfilled.match(result)) {
+        const user = result.payload.user;
+        if (user?.role === 'admin') {
+          router.push('/admin');
+        } else {
+          router.push('/');
+        }
+      } else {
+        console.error("Google register failed:", (result as any).payload || (result as any).error);
+        setValidationError(typeof result.payload === 'string' ? result.payload : 'Google register failed');
+      }
     }
   };
   

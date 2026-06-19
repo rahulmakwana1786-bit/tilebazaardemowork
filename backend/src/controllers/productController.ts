@@ -239,7 +239,7 @@ const getCategoryFromPath = (localPath: string): string => {
   return "Floor Tiles";
 };
 
-const getPriceFromFilename = (fileName: string): { price: number; discount_price: number | null } => {
+const getPriceFromFilename = (fileName: string, size?: string): { price: number; discount_price: number | null } => {
   const upper = fileName.toUpperCase();
   if (upper.includes("TRIM")) return { price: 8, discount_price: null };
   if (upper.includes("SPACER")) return { price: 6, discount_price: null };
@@ -248,6 +248,9 @@ const getPriceFromFilename = (fileName: string): { price: number; discount_price
   if (upper.includes("MATTING")) return { price: 6, discount_price: null };
   if (upper.includes("AURL GRIGIO") || upper.includes("PAVE") || upper.includes("SALT CONCRETO") || upper.includes("SALTED CONCRETO") || upper.includes("OUTDOOR")) {
     return { price: 18, discount_price: null };
+  }
+  if (size && (size.toUpperCase().includes("300X600") || size.toUpperCase().includes("600X300"))) {
+    return { price: 15, discount_price: 10 };
   }
   return { price: 15, discount_price: null };
 };
@@ -327,7 +330,7 @@ const syncLocalDirectoryDirectly = async () => {
 
       if (alreadyExists) continue;
 
-      const { price, discount_price } = getPriceFromFilename(filename);
+      const { price, discount_price } = getPriceFromFilename(filename, size);
       const category = getCategoryFromPath(relativePath);
 
       productsToSync.push({
@@ -399,7 +402,7 @@ export const syncLocalProducts = async (req: Request, res: Response) => {
       const slugBase = `${displayName} ${finish !== 'OTHER' ? finish : ''} ${size}`;
       const finalSlug = slugify(slugBase);
 
-      const { price, discount_price } = getPriceFromFilename(filename);
+      const { price, discount_price } = getPriceFromFilename(filename, size);
       const category = getCategoryFromPath(relativePath);
 
       const productData = {

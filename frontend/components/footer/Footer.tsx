@@ -238,7 +238,7 @@ export default function Footer() {
             </span>
             <div className="flex gap-6 text-lg">
               <Link
-                href="https://www.facebook.com/share/1PFi9tive6/?mibextid=wwXIfr"
+                href="https://www.facebook.com/profile.php?id=61583916478359"
                 target="_blank"
               >
                 <FaFacebookF className="cursor-pointer hover:text-[#4a2c2a] transition-colors" />

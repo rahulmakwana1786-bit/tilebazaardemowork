@@ -43,8 +43,9 @@ const formatFileName = (name: string) => {
   return clean;
 };
 
-const getProductDetails = (fileName: string) => {
+const getProductDetails = (fileName: string, dimension?: string) => {
   const upper = fileName.toUpperCase();
+  const dimUpper = dimension ? dimension.toUpperCase() : "";
   if (upper.includes("TRIM")) return { price: 8, unit: "+vat/piece", isAccessory: true };
   if (upper.includes("SPACER")) return { price: 6, unit: "+vat/bag", isAccessory: true };
   if (upper.includes("WEDGE")) return { price: 6, unit: "+vat/bag", isAccessory: true };
@@ -52,6 +53,10 @@ const getProductDetails = (fileName: string) => {
   if (upper.includes("MATTING")) return { price: 6, unit: "+vat/sqm", isAccessory: true };
   // New Arrivals & Outdoor tiles are priced at £18
   if (upper.includes("AURL GRIGIO") || upper.includes("PAVE") || upper.includes("SALT CONCRETO") || upper.includes("SALTED CONCRETO") || upper.includes("OUTDOOR")) return { price: 18, unit: "m²", isAccessory: false };
+  // 300x600 tiles have a default price of £10
+  if (upper.includes("300X600") || dimUpper.includes("300X600") || dimUpper.includes("300X600 MM") || upper.includes("300X600MM")) {
+    return { price: 10, unit: "m²", isAccessory: false };
+  }
   // All other tiles default to £15
   return { price: 15, unit: "m²", isAccessory: false };
 };
@@ -154,6 +159,15 @@ const getPreviewUrl = (
     // Custom logic for matching pave paris in single_tiles
     if (normalizedFile.includes("pave") && normalizedFile.includes("paris")) {
       if (normPreview.includes("pave") && normPreview.includes("paris")) {
+        return `/previews/${targetSize}/single_tiles/${preview}`;
+      }
+    }
+    
+    // Custom logic for matching poster pieces in single_tiles
+    if (normalizedFile.includes("poster") && normPreview.includes("poster")) {
+      const fileNum = normalizedFile.replace(/[^0-9]/g, "");
+      const previewNum = normPreview.replace(/[^0-9]/g, "");
+      if (fileNum && fileNum === previewNum) {
         return `/previews/${targetSize}/single_tiles/${preview}`;
       }
     }
@@ -362,7 +376,7 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
         }
       }
       
-      const key = `${baseName}_${size}`;
+      const key = `${baseName.replace(/[^a-z0-9]/g, "")}_${size.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
       
       if (!grouped.has(key)) grouped.set(key, []);
       grouped.get(key)!.push(img);
@@ -609,7 +623,7 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
       )}
 
       {/* Dimensions Filter */}
-      {sizeFilter !== "accessories" && finishFilter !== "COMING SOON" && (
+      {finishFilter !== "COMING SOON" && (
         <div className="text-center">
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 mb-6">
             Dimensions
@@ -643,6 +657,19 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
                 {size}
               </Link>
             ))}
+
+            <Link
+              href={createFilterUrl("size", "accessories")}
+              scroll={false}
+              onClick={() => setIsMobileFilterOpen(false)}
+              className={`px-7 py-3 text-[10px] font-bold uppercase tracking-widest border rounded-full transition-all duration-300 inline-block ${
+                sizeFilter === "accessories"
+                  ? "bg-[#4a2c2a] text-white border-[#4a2c2a] shadow-lg"
+                  : "bg-white text-[#5e7e95] border-gray-100 hover:border-gray-200"
+              }`}
+            >
+              Accessories
+            </Link>
           </div>
         </div>
       )}
@@ -829,17 +856,33 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
           const imageNameWithoutQuery = imageName.split("?")[0];
           const fileNameOnly = imageNameWithoutQuery.split("/").pop() || imageNameWithoutQuery;
           const finish = getFinish(fileNameOnly, imageName);
-          const details = getProductDetails(fileNameOnly);
           const isPoster = fileNameOnly.toUpperCase().includes("POSTER");
           
           let displayName = formatFileName(fileNameOnly);
-          let displayPrice = details.price;
-          let displayOriginalPrice = details.price + 5;
           let category = "";
           let productSlug = "";
           let isComingSoon = imageNameWithoutQuery.startsWith("comingsoon/");
           let isOutOfStock = false;
           
+          // Determine dimensions
+          let dimension = "N/A";
+          if (imageName.includes("?size=")) {
+            dimension = imageName.split("?size=")[1].split("&")[0];
+          } else if (!imageName.startsWith("http")) {
+            const parts = imageNameWithoutQuery.split("/");
+            const sizeFolder = parts.find(p => p.toLowerCase().includes("x") && /\d+x\d+/i.test(p));
+            if (sizeFolder) {
+              dimension = sizeFolder;
+            } else if (parts[0] !== "comingsoon" && parts[0].includes("x")) {
+              dimension = parts[0].split("?")[0] || "N/A";
+            }
+          }
+          dimension = dimension.toUpperCase();
+
+          const details = getProductDetails(fileNameOnly, dimension);
+          let displayPrice = details.price;
+          let displayOriginalPrice = details.price + 5;
+
           if (imageName.includes("?")) {
              const params = new URLSearchParams(imageName.split("?")[1]);
              if (params.has("name")) displayName = params.get("name")!;
@@ -865,25 +908,10 @@ export default function TileGallery({ initialImages = [], initialPreviews = [] }
              }
           }
           if (category === "Coming Soon") {
-            isComingSoon = true;
+             isComingSoon = true;
           }
 
           const detailPageUrl = productSlug ? `/products/${productSlug}` : `/products/${encodeURIComponent(imageName)}`;
-
-          // Determine dimensions
-          let dimension = "N/A";
-          if (imageName.includes("?size=")) {
-            dimension = imageName.split("?size=")[1].split("&")[0];
-          } else if (!imageName.startsWith("http")) {
-            const parts = imageNameWithoutQuery.split("/");
-            const sizeFolder = parts.find(p => p.toLowerCase().includes("x") && /\d+x\d+/i.test(p));
-            if (sizeFolder) {
-              dimension = sizeFolder;
-            } else if (parts[0] !== "comingsoon" && parts[0].includes("x")) {
-              dimension = parts[0].split("?")[0] || "N/A";
-            }
-          }
-          dimension = dimension.toUpperCase();
 
           // Generate preview image
           const previewUrl = getPreviewUrl(imageName, dimension, previewPaths);

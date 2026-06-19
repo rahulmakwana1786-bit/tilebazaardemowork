@@ -15,16 +15,30 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function checkUsers() {
+  const testEmail = `test_no_phone_${Date.now()}@example.com`;
+  console.log(`Attempting to insert test user: ${testEmail}`);
   const { data, error } = await supabase
     .from('users')
-    .select('id, email, full_name, role');
+    .insert([
+      {
+        email: testEmail,
+        password: 'testpassword123',
+        full_name: 'Test No Phone',
+        country: 'United Kingdom'
+      }
+    ])
+    .select();
     
   if (error) {
-    console.error("Error fetching users:", error);
+    console.error("Insert failed:", error);
   } else {
-    console.log(`Found ${data.length} total users.`);
-    const admins = data.filter(u => u.role === 'admin');
-    console.log(`Found ${admins.length} admins:`, admins);
+    console.log("Insert succeeded! User created:", data);
+    // Cleanup
+    const { error: delError } = await supabase
+      .from('users')
+      .delete()
+      .eq('email', testEmail);
+    console.log("Cleanup delete:", delError ? "Failed" : "Succeeded");
   }
 }
 

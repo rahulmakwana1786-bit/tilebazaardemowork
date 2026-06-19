@@ -28,11 +28,15 @@ async function seedProducts() {
       const namePart = file.split('--')[0].replace(/_/g, ' ');
       const finishPart = file.split('--')[1]?.split('.')[0];
       
+      const is300 = size === '300x600';
+      const originalPrice = is300 ? 15.00 : 20.00;
+      const salePrice = is300 ? 10.00 : 15.00;
+
       products.push({
         name: namePart.toUpperCase(),
         slug: namePart.toLowerCase().replace(/ /g, '-'),
-        price: 15.00,
-        discount_price: 20.00,
+        price: originalPrice,
+        discount_price: salePrice,
         image: file, // Store just the filename, we build path in frontend
         size: size.toUpperCase(),
         finish: finishPart ? finishPart.toUpperCase() : null,

@@ -114,8 +114,9 @@ const leftSideVariantsGroup = [
   ["waves hl", "waves nero f1"],
 ];
 
-const getProductDetails = (fileName: string) => {
+const getProductDetails = (fileName: string, dimension?: string) => {
   const upper = fileName.toUpperCase();
+  const dimUpper = dimension ? dimension.toUpperCase() : "";
   if (upper.includes("TRIM"))
     return {
       price: 8,
@@ -165,6 +166,20 @@ const getProductDetails = (fileName: string) => {
   ) {
     return {
       price: 18,
+      unit: "m²",
+      isAccessory: false,
+      isAdhesive: false,
+      isTrim: false,
+    };
+  }
+  if (
+    upper.includes("300X600") ||
+    dimUpper.includes("300X600") ||
+    dimUpper.includes("300X600 MM") ||
+    upper.includes("300X600MM")
+  ) {
+    return {
+      price: 10,
       unit: "m²",
       isAccessory: false,
       isAdhesive: false,
@@ -326,6 +341,15 @@ const getPreviewUrl = (
     // Custom logic for matching pave paris in single_tiles
     if (normalizedFile.includes("pave") && normalizedFile.includes("paris")) {
       if (normPreview.includes("pave") && normPreview.includes("paris")) {
+        return `/previews/${targetSize}/single_tiles/${preview}`;
+      }
+    }
+    
+    // Custom logic for matching poster pieces in single_tiles
+    if (normalizedFile.includes("poster") && normPreview.includes("poster")) {
+      const fileNum = normalizedFile.replace(/[^0-9]/g, "");
+      const previewNum = normPreview.replace(/[^0-9]/g, "");
+      if (fileNum && fileNum === previewNum) {
         return `/previews/${targetSize}/single_tiles/${preview}`;
       }
     }
@@ -767,7 +791,7 @@ export default function ProductDetailPage({
     : imagePath;
 
   let finish = getFinish(fileNameOnly);
-  const details = getProductDetails(fileNameOnly);
+  const details = getProductDetails(fileNameOnly, dimension);
   let category = getCategory(fileNameOnly);
   let displayName = formatFileName(fileNameOnly);
   const isPoster = fileNameOnly.toUpperCase().includes("POSTER");
@@ -798,6 +822,7 @@ export default function ProductDetailPage({
     }
     if (productData.discount_price !== undefined && productData.discount_price !== null) {
       details.price = productData.discount_price;
+      displayOriginalPrice = productData.price !== undefined && productData.price !== null ? productData.price : displayOriginalPrice;
     }
     if (productData.size) {
       dimension = productData.size.toUpperCase();

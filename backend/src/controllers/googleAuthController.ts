@@ -36,8 +36,27 @@ export const googleLogin = async (req: Request, res: Response) => {
       .maybeSingle();
 
     if (!user) {
-      // User does NOT exist - block login
-      return res.status(404).json({ message: 'No account found with this Google email. Please register first.' });
+      // User does NOT exist - automatically register them
+      const { name: full_name } = payload;
+      const randomPassword = crypto.randomBytes(32).toString('hex');
+      const registrationData = {
+        email,
+        password: randomPassword,
+        full_name: full_name || 'Google User',
+        country: 'United Kingdom', // Default
+      };
+
+      const { data: newUser, error: insertError } = await supabase
+        .from('users')
+        .insert([registrationData])
+        .select()
+        .single();
+
+      if (insertError || !newUser) {
+        console.error('Error inserting user during Google login auto-registration:', insertError);
+        return res.status(500).json({ message: 'Failed to create user account' });
+      }
+      user = newUser;
     } 
     // Generate custom JWT
     const jwtToken = jwt.sign(

@@ -332,6 +332,15 @@ const getPreviewUrl = (
       }
     }
     
+    // Custom logic for matching poster pieces in single_tiles
+    if (normalizedFile.includes("poster") && normPreview.includes("poster")) {
+      const fileNum = normalizedFile.replace(/[^0-9]/g, "");
+      const previewNum = normPreview.replace(/[^0-9]/g, "");
+      if (fileNum && fileNum === previewNum) {
+        return `/previews/${targetSize}/single_tiles/${preview}`;
+      }
+    }
+    
     if (normalizedFile === normPreview || normalizedFile.startsWith(normPreview) || normPreview.startsWith(normalizedFile)) {
       return `/previews/${targetSize}/single_tiles/${preview}`;
     }

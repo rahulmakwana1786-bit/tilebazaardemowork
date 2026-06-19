@@ -189,8 +189,9 @@ function getCategory(localPath: string): string {
   return "Premium Collection";
 }
 
-function getProductDetails(fileName: string) {
+function getProductDetails(fileName: string, localPath?: string) {
   const upper = fileName.toUpperCase();
+  const pathUpper = localPath ? localPath.toUpperCase() : "";
   if (upper.includes("TRIM")) return { price: 8, unit: "+vat/piece" };
   if (upper.includes("SPACER")) return { price: 6, unit: "+vat/bag" };
   if (upper.includes("WEDGE")) return { price: 6, unit: "+vat/bag" };
@@ -205,6 +206,9 @@ function getProductDetails(fileName: string) {
   ) {
     return { price: 18, unit: "m²" };
   }
+  if (upper.includes("300X600") || pathUpper.includes("300X600")) {
+    return { price: 10, unit: "m²" };
+  }
   return { price: 15, unit: "m²" };
 }
 
@@ -218,18 +222,22 @@ function mapLocalPathToUrl(localPath: string, products: any[] = []): string[] {
     if (p.image && p.image.startsWith("http")) {
       return false;
     }
-    if (p.image === basename) {
-      const localSize = getSize(localPath, basename);
-      const prodSize = p.size;
-      if (localSize && prodSize) {
-        const normLocal = localSize.toLowerCase().replace(/[^a-z0-9]/g, "");
-        const normProd = prodSize.toLowerCase().replace(/[^a-z0-9]/g, "");
-        if (normLocal === normProd) {
-          return true;
+    // If the product has a specific local image filename, it must match basename exactly
+    if (p.image && !p.image.startsWith("http")) {
+      if (p.image === basename) {
+        const localSize = getSize(localPath, basename);
+        const prodSize = p.size;
+        if (localSize && prodSize) {
+          const normLocal = localSize.toLowerCase().replace(/[^a-z0-9]/g, "");
+          const normProd = prodSize.toLowerCase().replace(/[^a-z0-9]/g, "");
+          if (normLocal === normProd) {
+            return true;
+          }
+          return false;
         }
-        return false;
+        return true;
       }
-      return true;
+      return false;
     }
     const nameMatches = p.name.toLowerCase() === baseStr || p.name.toLowerCase() === cleanStr;
     if (nameMatches) {
@@ -284,11 +292,15 @@ function mapLocalPathToUrl(localPath: string, products: any[] = []): string[] {
   const cleanName = formatFileName(basename);
   const fallbackSlug = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   const fallbackCategory = getCategory(localPath);
-  const fallbackDetails = getProductDetails(basename);
+  const fallbackDetails = getProductDetails(basename, localPath);
   const fallbackSize = getSize(localPath, basename);
   const fallbackFinish = getFinish(basename, localPath);
 
-  let url = `${localPath}?name=${encodeURIComponent(cleanName)}&price=${fallbackDetails.price}&slug=${fallbackSlug}&category=${encodeURIComponent(fallbackCategory)}`;
+  const is300 = fallbackSize === "300x600";
+  let url = `${localPath}?name=${encodeURIComponent(cleanName)}&price=${is300 ? 15 : fallbackDetails.price}&slug=${fallbackSlug}&category=${encodeURIComponent(fallbackCategory)}`;
+  if (is300) {
+    url += `&discountPrice=10`;
+  }
   if (fallbackSize && fallbackSize !== "accessories") {
     url += `&size=${encodeURIComponent(fallbackSize)}`;
   }

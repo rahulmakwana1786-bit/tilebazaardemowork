@@ -12,13 +12,25 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 async function checkProducts() {
   const { data, error } = await supabase
     .from('products')
-    .select('id, name, slug, size, image')
-    .ilike('name', '%alexa%');
+    .select('id, name, slug, size, image, is_active')
+    .eq('size', '600x600');
 
   if (error) {
     console.error('Error fetching:', error);
   } else {
-    console.log('Products:', JSON.stringify(data, null, 2));
+    console.log(`Found ${data.length} products of size 600x600.`);
+    const seen = new Map();
+    const duplicates = [];
+    data.forEach(p => {
+      const key = `${p.name.toLowerCase().trim()}_${p.size.toLowerCase().trim()}`;
+      if (seen.has(key)) {
+        duplicates.push({ original: seen.get(key), duplicate: p });
+      } else {
+        seen.set(key, p);
+      }
+    });
+    console.log('Duplicates found:', JSON.stringify(duplicates, null, 2));
+    console.log('All 600x600 products:', JSON.stringify(data, null, 2));
   }
 }
 
