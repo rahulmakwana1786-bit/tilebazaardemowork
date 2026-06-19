@@ -23,7 +23,7 @@ app.use(helmet());
 
 const allowedOrigins = [
   process.env.FRONTEND_URL,
-  'http:tilebazaardemowork.vercel.app',
+  'https://tilebazaardemowork-npbm.vercel.app',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
   'http://localhost:3001',
