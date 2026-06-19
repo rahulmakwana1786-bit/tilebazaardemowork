@@ -289,11 +289,25 @@ function mapLocalPathToUrl(localPath: string, products: any[] = []): string[] {
   }
 
   // Fallback for unmatched local file
+  const fallbackSize = getSize(localPath, basename);
+  if (fallbackSize === "1200x1200") {
+    const allowed = [
+      "crema marfil neo_01.jpg.jpg",
+      "ok.jpg",
+      "serena.jpg",
+      "marble carrara-01.jpg.jpg",
+      "oriol aqua_01.jpg.jpg",
+      "passion pulpis bianco_01.jpg.jpg",
+      "snow white_01.jpg.jpg"
+    ];
+    if (!allowed.includes(basename.toLowerCase())) {
+      return [];
+    }
+  }
   const cleanName = formatFileName(basename);
   const fallbackSlug = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   const fallbackCategory = getCategory(localPath);
   const fallbackDetails = getProductDetails(basename, localPath);
-  const fallbackSize = getSize(localPath, basename);
   const fallbackFinish = getFinish(basename, localPath);
 
   const is300 = fallbackSize === "300x600";
